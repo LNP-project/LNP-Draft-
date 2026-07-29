@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Prototipo Calendario-HUB + Draft</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
 :root{
   --bg:#10161d;
@@ -1383,11 +1383,384 @@ body{
   font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:1px;
   color:var(--gold);font-size:0.82rem;margin-bottom:8px;
 }
+/* =====================================================================
+   NOCTURNE DESIGN SYSTEM — scoped restyle for Club/Rosa/Stagione/Shop/Album
+   + pack-opening overlay + end-of-season overlay.
+   Everything here lives under .noc-* classes / #noc-* ids so Coppa Italia,
+   MyPlayer and Road to Glory screens (which reuse the ORIGINAL classes
+   above: .hub-header, .modal-btn, --gold etc.) are completely unaffected.
+   ===================================================================== */
+.noc-scope{
+  --noc-ground:#161826;
+  --noc-surface:#232532;
+  --noc-surface-row:#1c1e2a;
+  --noc-text:#e9e9ed;
+  --noc-text-sec:#cfd3e5;
+  --noc-text-sec2:#b2b6ca;
+  --noc-text-muted:#9397ab;
+  --noc-text-muted2:#75798c;
+  --noc-hairline:#3f424d;
+  --noc-accent:#9184d9;
+  --noc-a100:#f5f4ff; --noc-a200:#e7e5fe; --noc-a300:#d2cefd; --noc-a400:#b5abfc;
+  --noc-a500:#968ae0; --noc-a600:#796cbf; --noc-a700:#5d5294; --noc-a800:#423a6a; --noc-a900:#2b2741;
+  --noc-n300:#cfd3e5; --noc-n400:#b2b6ca; --noc-n500:#9397ab; --noc-n600:#75798c; --noc-n700:#595d6c; --noc-n800:#3f424d; --noc-n900:#292b31;
+  --noc-presence:#262a60; --noc-presence-glow:#353b80;
+  font-family:'Inter',system-ui,sans-serif;
+  color:var(--noc-text);
+  font-variant-numeric: tabular-nums;
+}
+.noc-scope *{box-sizing:border-box;font-variant-numeric:tabular-nums;}
+.noc-hidden{display:none !important;}
+
+@keyframes nocFadeUp{ from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
+@keyframes nocFlipIn{ 0%{opacity:0;transform:perspective(900px) rotateY(-96deg) scale(.86)} 60%{opacity:1} 100%{opacity:1;transform:perspective(900px) rotateY(0) scale(1)} }
+@keyframes nocFlash{ 0%{opacity:0} 18%{opacity:.85} 100%{opacity:0} }
+@keyframes nocPulseGlow{ 0%,100%{box-shadow:0 0 0 1px #5d5294,0 0 24px rgba(145,132,217,.25)} 50%{box-shadow:0 0 0 1px #b5abfc,0 0 44px rgba(181,171,252,.5)} }
+@keyframes nocShimmer{ 0%{background-position:-160% 0} 100%{background-position:260% 0} }
+@keyframes nocTick{ from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:none} }
+
+/* ---------- App shell ---------- */
+.noc-outer{ min-height:100vh; display:flex; justify-content:center;
+  background:radial-gradient(120% 80% at 50% 0%, #1d2033 0%, #161826 60%); }
+.noc-app{ width:100%; max-width:440px; min-height:100vh; box-shadow:0 0 0 1px #292b31;
+  background:linear-gradient(180deg,#191b2b 0%,#161826 40%);
+  display:flex; flex-direction:column; position:relative; }
+.noc-header{ position:sticky; top:0; z-index:20; padding:14px 16.8px 11.2px;
+  background:linear-gradient(180deg,rgba(25,27,43,.97),rgba(25,27,43,.8));
+  backdrop-filter:blur(12px); border-bottom:1px solid rgba(233,233,237,.09);
+  display:flex; align-items:center; gap:8.4px; }
+.noc-logo{ width:34px; height:34px; border-radius:8px; flex:none;
+  background:linear-gradient(150deg,#423a6a,#2b2741); border:1px solid #5d5294;
+  display:flex; align-items:center; justify-content:center; }
+.noc-logo svg{ stroke:#b5abfc; }
+.noc-club-id{ flex:1; min-width:0; }
+.noc-club-name{ font-size:14px; font-weight:600; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.noc-club-sub{ font-size:10.5px; text-transform:uppercase; letter-spacing:.12em; color:#75798c; margin-top:1px; }
+.noc-credits-pill{ padding:5.6px 9.8px; border-radius:99px; background:#2b2741; border:1px solid #423a6a;
+  display:flex; align-items:center; gap:5px; font-size:12.5px; font-weight:600; color:var(--noc-text); white-space:nowrap; }
+.noc-main{ flex:1; padding:16.8px 16.8px 96px; display:flex; flex-direction:column; gap:16.8px; animation:nocFadeUp .35s ease both; }
+.noc-nav{ position:sticky; bottom:0; z-index:20; display:flex; padding:8.4px 11.2px 14px;
+  background:linear-gradient(180deg,rgba(22,24,38,.72),rgba(22,24,38,.98)); backdrop-filter:blur(14px);
+  border-top:1px solid rgba(233,233,237,.09); }
+.noc-nav-btn{ flex:1; min-height:48px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+  background:none; border:none; cursor:pointer; color:#75798c; font:400 10.5px/1 'Inter',sans-serif; }
+.noc-nav-btn:hover{ background:rgba(145,132,217,.08); border-radius:8px; }
+.noc-nav-pip{ width:26px; height:3px; border-radius:99px; background:transparent; }
+.noc-nav-btn.active{ color:#e7e5fe; font-weight:600; }
+.noc-nav-btn.active .noc-nav-pip{ background:#b5abfc; }
+.noc-nav-btn:focus-visible, .noc-scope button:focus-visible, .noc-scope [tabindex]:focus-visible{ outline:2px solid #9184d9; outline-offset:2px; }
+
+/* ---------- Generic building blocks ---------- */
+.noc-screen-title{ font-size:19px; font-weight:600; letter-spacing:-.02em; }
+.noc-screen-sub{ font-size:12px; color:#75798c; margin-top:2.8px; }
+.noc-hero{ position:relative; border-radius:14px; padding:19.6px 16.8px; overflow:hidden;
+  background:linear-gradient(140deg,#262a60 0%,#20223c 55%,#1b1d2e 100%);
+  box-shadow:0 0 0 1px #423a6a, 0 6px 18px rgba(0,0,0,.55); }
+.noc-hero::before{ content:''; position:absolute; inset:-40% -20% auto auto; width:230px; height:230px;
+  background:radial-gradient(circle, rgba(145,132,217,.28), transparent 65%); pointer-events:none; }
+.noc-hero-kicker{ position:relative; font:600 10.5px/1 'Inter',sans-serif; text-transform:uppercase; letter-spacing:.14em; color:#b5afe8; }
+.noc-hero-title{ position:relative; font-size:25px; font-weight:600; letter-spacing:-.02em; line-height:1.1; margin-top:8px; }
+.noc-hero-sub{ position:relative; font-size:12.5px; color:#cfd3e5; max-width:30ch; margin-top:8px; line-height:1.45; }
+.noc-hero-row{ position:relative; display:flex; gap:8.4px; margin-top:16.8px; }
+.noc-btn{ min-height:44px; border-radius:8px; font:600 13px/1 'Inter',sans-serif; cursor:pointer; padding:0 14px;
+  display:inline-flex; align-items:center; justify-content:center; gap:6px; border:1px solid transparent; transition:background .15s ease; }
+.noc-btn-primary{ border-color:#9184d9; background:rgba(145,132,217,.1); color:#e7e5fe; flex:1; }
+.noc-btn-primary:hover{ background:rgba(181,171,252,.2); }
+.noc-btn-primary:active{ background:rgba(121,108,191,.35); }
+.noc-btn-secondary{ border-color:rgba(233,233,237,.18); background:transparent; color:#cfd3e5; }
+.noc-btn-secondary:hover{ background:rgba(233,233,237,.06); }
+.noc-btn-danger{ border-color:rgba(255,90,90,.35); background:rgba(255,90,90,.08); color:#ffb4b4; }
+.noc-btn-danger:hover{ background:rgba(255,90,90,.16); }
+.noc-btn[disabled]{ opacity:.55; cursor:not-allowed; }
+.noc-btn-full{ width:100%; min-height:48px; }
+
+.noc-stats3{ display:grid; grid-template-columns:repeat(3,1fr); gap:8.4px; }
+.noc-stat-cell{ padding:11.2px; border-radius:8px; background:#232532; box-shadow:0 0 0 1px #3f424d; }
+.noc-stat-value{ font-size:21px; font-weight:600; }
+.noc-stat-value.accent{ color:#b5abfc; }
+.noc-stat-label{ font-size:9.5px; text-transform:uppercase; letter-spacing:.1em; color:#75798c; margin-top:2px; }
+
+.noc-section-head{ display:flex; align-items:baseline; justify-content:space-between; }
+.noc-section-title{ font-size:14px; font-weight:600; }
+.noc-section-count{ font-size:10.5px; color:#75798c; }
+
+.noc-obj-row{ display:flex; align-items:center; gap:11.2px; padding:11.2px; border-radius:8px; background:#232532; box-shadow:0 0 0 1px #3f424d; margin-top:8.4px; }
+.noc-obj-badge{ width:30px; height:30px; border-radius:7px; flex:none; display:flex; align-items:center; justify-content:center; font:600 13px/1 'Inter',sans-serif; background:#292b31; color:#75798c; }
+.noc-obj-badge.done{ background:rgba(145,132,217,.2); color:#d2cefd; }
+.noc-obj-body{ flex:1; min-width:0; }
+.noc-obj-title{ font-size:12.5px; font-weight:500; }
+.noc-obj-track{ height:4px; border-radius:99px; background:#292b31; margin-top:6px; overflow:hidden; }
+.noc-obj-fill{ height:100%; border-radius:99px; background:linear-gradient(90deg,#5d5294,#b5abfc); }
+.noc-obj-right{ text-align:right; flex:none; }
+.noc-obj-progress{ font-size:11px; color:#9397ab; display:block; }
+.noc-obj-reward{ font-size:10px; font-weight:600; color:#796cbf; display:block; margin-top:2px; }
+
+.noc-segmented{ padding:3px; border-radius:8px; background:#232532; box-shadow:0 0 0 1px #3f424d; display:flex; gap:3px; }
+.noc-seg-btn{ flex:1; min-height:44px; border-radius:6px; border:none; background:transparent; color:#9397ab; cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; font-family:'Inter',sans-serif; }
+.noc-seg-btn.active{ background:rgba(145,132,217,.18); color:#e7e5fe; }
+.noc-seg-main{ font-size:12.5px; font-weight:600; }
+.noc-seg-sub{ font-size:9px; opacity:.7; }
+
+/* ---------- Rosa / campo ---------- */
+.noc-pitch{ position:relative; border-radius:14px; padding:16.8px 11.2px; overflow:hidden;
+  background:linear-gradient(170deg,#20223a,#191b2b); box-shadow:0 0 0 1px #3f424d; }
+.noc-pitch::before{ content:''; position:absolute; left:50%; top:0; bottom:0; width:1px; transform:translateX(-50%);
+  background:linear-gradient(180deg,transparent,rgba(233,233,237,.1),transparent); }
+.noc-pitch-row{ display:flex; justify-content:center; gap:11.2px; margin-top:11.2px; flex-wrap:wrap; }
+.noc-pitch-row:first-child{ margin-top:0; }
+.noc-slot{ width:96px; min-height:112px; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5.6px;
+  padding:8px 4px; cursor:pointer; border:1px solid #3f424d; background:linear-gradient(165deg,#2f3242,#20222e); }
+.noc-slot:hover{ border-color:#b5abfc; }
+.noc-slot.empty{ border-style:dashed; border-color:#3f424d; background:rgba(35,37,50,.4); color:#595d6c; cursor:default; }
+.noc-slot-role{ font-size:9px; text-transform:uppercase; letter-spacing:.06em; }
+.noc-slot-avatar{ width:38px; height:38px; border-radius:99px; background:linear-gradient(150deg,#3f424d,#292b31);
+  display:flex; align-items:center; justify-content:center; font:600 12px/1 'Inter',sans-serif; color:#e9e9ed; }
+.noc-slot-name{ font-size:11px; font-weight:500; max-width:88px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.noc-slot-ovr{ font-size:14px; font-weight:700; }
+
+.noc-bench-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8.4px; }
+.noc-bench-cell{ min-height:88px; border-radius:8px; background:#232532; padding:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:pointer; }
+.noc-bench-cell:hover{ box-shadow:0 0 0 1px #b5abfc; }
+.noc-bench-role{ font-size:9px; text-transform:uppercase; color:#75798c; }
+.noc-bench-name{ font-size:11px; }
+.noc-bench-ovr{ font-size:13px; font-weight:700; }
+
+/* rarity tokens reused for slots/bench/album/cards */
+.noc-rar-common{ --rc-top:#2f3242; --rc-bot:#20222e; --rc-edge:#3f424d; --rc-text:#9397ab; --rc-ovr:#cfd3e5; --rc-glow:rgba(117,121,140,.18); }
+.noc-rar-uncommon{ --rc-top:#2f3242; --rc-bot:#20222e; --rc-edge:#3f424d; --rc-text:#9397ab; --rc-ovr:#cfd3e5; --rc-glow:rgba(117,121,140,.18); }
+.noc-rar-rare{ --rc-top:#33314d; --rc-bot:#23223a; --rc-edge:#5c5783; --rc-text:#b5afe8; --rc-ovr:#d2cefd; --rc-glow:rgba(121,114,169,.28); }
+.noc-rar-epic{ --rc-top:#3a3560; --rc-bot:#262341; --rc-edge:#796cbf; --rc-text:#d2cefd; --rc-ovr:#e7e5fe; --rc-glow:rgba(145,132,217,.4); }
+.noc-rar-legendary{ --rc-top:#453d7a; --rc-bot:#2b2741; --rc-edge:#b5abfc; --rc-text:#f5f4ff; --rc-ovr:#f5f4ff; --rc-glow:rgba(181,171,252,.55); }
+.noc-slot[class*="noc-rar-"]{ background:linear-gradient(165deg,var(--rc-top),var(--rc-bot)); border-color:var(--rc-edge);
+  box-shadow:0 0 0 1px var(--rc-edge), 0 8px 22px rgba(0,0,0,.6); }
+.noc-slot[class*="noc-rar-epic"], .noc-slot[class*="noc-rar-legendary"]{ box-shadow:0 0 0 1px var(--rc-edge), 0 0 46px var(--rc-glow); }
+.noc-slot[class*="noc-rar-"] .noc-slot-role{ color:var(--rc-text); }
+.noc-slot[class*="noc-rar-"] .noc-slot-ovr{ color:var(--rc-ovr); }
+
+/* ---------- Stagione ---------- */
+.noc-season-head{ display:flex; justify-content:space-between; align-items:flex-end; }
+.noc-kicker{ font:600 9.5px/1 'Inter',sans-serif; text-transform:uppercase; letter-spacing:.14em; color:#75798c; }
+.noc-giornata-val{ font-size:25px; font-weight:600; }
+.noc-record-val{ font-size:16px; font-weight:600; text-align:right; }
+.noc-record-val b{ color:#b5abfc; }
+.noc-progress-track{ height:4px; border-radius:99px; background:#292b31; overflow:hidden; }
+.noc-progress-fill{ height:100%; background:linear-gradient(90deg,#5d5294,#b5abfc); transition:width .4s ease; }
+
+.noc-match-card{ position:relative; border-radius:14px; padding:16.8px; overflow:hidden;
+  background:linear-gradient(150deg,#262a60,#1c1e33); border:1px solid #423a6a; }
+.noc-match-card::before{ content:''; position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(90% 120% at 100% 0%, rgba(145,132,217,.22), transparent 60%); }
+.noc-match-kicker{ position:relative; font:600 9.5px/1 'Inter',sans-serif; text-transform:uppercase; letter-spacing:.14em; color:#b5afe8; }
+.noc-match-row{ position:relative; display:flex; align-items:center; justify-content:space-between; margin-top:8.4px; gap:8px; }
+.noc-match-team{ font-size:13px; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.noc-match-tag{ font-size:9.5px; color:#b5afe8; display:block; font-weight:400; }
+.noc-match-score{ font-size:30px; font-weight:700; letter-spacing:-.03em; white-space:nowrap; }
+.noc-match-divider{ border:none; border-top:1px solid rgba(233,233,237,.12); margin:11.2px 0; position:relative; }
+.noc-match-line{ position:relative; font-size:12px; color:#e4e7f5; min-height:36px; }
+.noc-match-controls{ display:flex; gap:8.4px; }
+.noc-match-controls .noc-btn-secondary{ flex:none; }
+
+.noc-results-label{ font:600 9.5px/1 'Inter',sans-serif; text-transform:uppercase; letter-spacing:.1em; color:#75798c; }
+.noc-result-row{ display:flex; align-items:center; gap:8px; padding:9.8px 11.2px; border-radius:8px; background:#232532; margin-top:6px; animation:nocTick .3s ease both; }
+.noc-result-badge{ width:22px; height:22px; border-radius:6px; flex:none; display:flex; align-items:center; justify-content:center; font:600 11px/1 'Inter',sans-serif; background:#292b31; color:#9397ab; }
+.noc-result-badge.win{ background:rgba(145,132,217,.22); color:#d2cefd; }
+.noc-result-teams{ flex:1; font-size:12px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.noc-result-score{ font-size:12.5px; font-weight:600; }
+.noc-result-gg{ font-size:10.5px; color:#75798c; }
+.noc-boxscore-wrap{ padding:2px 0 10px; animation:nocTick .2s ease both; }
+.noc-box-table{ border-radius:8px; overflow:hidden; box-shadow:0 0 0 1px #3f424d; background:#1c1e2a; }
+.noc-box-title{ padding:8.4px 9.8px; background:#232532; font:600 11px/1 'Inter',sans-serif; }
+.noc-box-head{ display:grid; grid-template-columns:26px 1fr 26px 34px 34px 26px 26px 26px; gap:4px; padding:6px 9.8px; font:600 8.5px/1 'Inter',sans-serif; text-transform:uppercase; color:#75798c; border-top:1px solid rgba(233,233,237,.07); }
+.noc-box-row{ display:grid; grid-template-columns:26px 1fr 26px 34px 34px 26px 26px 26px; gap:4px; padding:6px 9.8px; font-size:10.5px; border-top:1px solid rgba(233,233,237,.07); }
+.noc-box-role{ color:#9397ab; font-weight:600; }
+.noc-box-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.noc-box-divider{ padding:6px 9.8px 2px; font:600 8px/1 'Inter',sans-serif; letter-spacing:.08em; color:#75798c; border-top:1px solid rgba(233,233,237,.07); }
+
+.noc-standings{ border-radius:8px; overflow:hidden; box-shadow:0 0 0 1px #3f424d; }
+.noc-standings-head{ display:grid; grid-template-columns:26px 1fr 30px 30px 42px; gap:8.4px; padding:8.4px 11.2px; background:#232532; }
+.noc-standings-head span{ font:600 9.5px/1 'Inter',sans-serif; text-transform:uppercase; color:#75798c; }
+.noc-standings-row{ display:grid; grid-template-columns:26px 1fr 30px 30px 42px; gap:8.4px; padding:9.8px 11.2px; background:#1c1e2a; border-top:1px solid rgba(233,233,237,.07); font-size:12px; }
+.noc-standings-row.me{ background:rgba(145,132,217,.12); font-weight:600; color:#e7e5fe; }
+.noc-standings-row .noc-pos{ color:#75798c; }
+.noc-standings-row .noc-pos.playoff{ color:#b5abfc; }
+
+/* ---------- Shop ---------- */
+.noc-pack-card{ position:relative; border-radius:14px; padding:14px; display:flex; gap:11.2px; align-items:center; overflow:hidden; border:1px solid; }
+.noc-pack-card::before{ content:''; position:absolute; inset:0; pointer-events:none; }
+.noc-pack-pouch{ width:62px; height:84px; border-radius:8px; flex:none; position:relative; overflow:hidden;
+  display:flex; align-items:center; justify-content:center; font:700 20px/1 'Inter',sans-serif; color:rgba(233,233,237,.62); }
+.noc-pack-pouch::after{ content:''; position:absolute; inset:0; background:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.14) 40%,transparent 60%);
+  background-size:300% 100%; animation:nocShimmer 3.4s linear infinite; }
+.noc-pack-body{ flex:1; min-width:0; position:relative; }
+.noc-pack-kicker{ font:600 9.5px/1 'Inter',sans-serif; text-transform:uppercase; letter-spacing:.1em; color:#b5afe8; }
+.noc-pack-name{ font-size:14.5px; font-weight:600; margin-top:2px; }
+.noc-pack-desc{ font-size:11.5px; color:#b2b6ca; margin-top:4px; line-height:1.4; }
+.noc-pack-cta{ margin-top:8.4px; min-height:44px; }
+.noc-odds-card{ border-radius:8px; background:#232532; padding:4px 11.2px; }
+.noc-odds-row{ display:flex; align-items:center; gap:8px; padding:8px 0; border-top:1px solid rgba(233,233,237,.07); font-size:12px; }
+.noc-odds-row:first-child{ border-top:none; }
+.noc-odds-dot{ width:8px; height:8px; border-radius:99px; flex:none; }
+.noc-odds-label{ flex:1; color:#cfd3e5; }
+.noc-odds-pct{ font-weight:600; color:#e9e9ed; }
+
+/* ---------- Album ---------- */
+.noc-album-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:5.6px; }
+.noc-album-cell{ aspect-ratio:3/4; border-radius:6px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:3px; }
+.noc-album-cell.owned{ background:linear-gradient(165deg,var(--rc-top),var(--rc-bot)); border:1px solid var(--rc-edge); }
+.noc-album-cell.owned .noc-album-ovr{ color:var(--rc-ovr); }
+.noc-album-cell.locked{ background:rgba(35,37,50,.35); border:1px solid #292b31; color:#3f424d; }
+.noc-album-ovr{ font-size:13px; font-weight:700; }
+.noc-album-surname{ font-size:8px; color:#9397ab; text-align:center; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* ---------- Pack-opening overlay (flip variant only) ---------- */
+.noc-pack-overlay{ position:fixed; inset:0; z-index:60; background:radial-gradient(90% 60% at 50% 30%,#22243d 0%,#0f101a 75%);
+  display:flex; justify-content:center; }
+.noc-pack-overlay.noc-hidden{ display:none; }
+.noc-pack-col{ width:100%; max-width:440px; height:100vh; display:flex; flex-direction:column; }
+.noc-pack-headband{ flex:none; display:flex; align-items:center; justify-content:space-between; padding:14px 16.8px 11.2px; border-bottom:1px solid rgba(233,233,237,.09); }
+.noc-pack-title{ font-size:16px; font-weight:600; }
+.noc-pack-stage{ flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; padding:16.8px; display:flex; flex-direction:column; align-items:center; gap:16.8px; }
+.noc-pack-foot{ flex:none; padding:11.2px 16.8px 16.8px; display:flex; flex-direction:column; align-items:center; gap:8.4px; }
+.noc-pack-hint{ font-size:12px; color:#b2b6ca; text-align:center; }
+.noc-pack-flash{ position:fixed; inset:0; z-index:65; background:#e7e5fe; pointer-events:none; animation:nocFlash .5s ease; }
+
+.noc-closed-pack{ width:176px; aspect-ratio:5/7; border-radius:12px; cursor:pointer; position:relative; overflow:hidden;
+  background:linear-gradient(160deg,#423a6a,#20223a); animation:nocPulseGlow 2.4s ease-in-out infinite;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; }
+.noc-closed-pack::after{ content:''; position:absolute; inset:0; background:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.12) 40%,transparent 60%);
+  background-size:300% 100%; animation:nocShimmer 3s linear infinite; }
+.noc-closed-pack::before{ content:''; position:absolute; inset:8px 1px; border:1px solid rgba(233,233,237,.14); border-radius:8px; }
+.noc-closed-pack .ncp-initials{ font-size:26px; font-weight:700; position:relative; }
+.noc-closed-pack .ncp-count{ font-size:9px; text-transform:uppercase; color:#b5afe8; position:relative; }
+
+.noc-cards-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:11px; width:100%; }
+.noc-cards-grid.solo{ grid-template-columns:1fr; max-width:232px; margin:0 auto; }
+.noc-pcard{ aspect-ratio:5/7; border-radius:11px; overflow:hidden; position:relative; cursor:pointer;
+  display:flex; flex-direction:column; background:linear-gradient(165deg,#2f3242,#20222e); box-shadow:0 0 0 1px #3f424d, 0 8px 22px rgba(0,0,0,.6); }
+.noc-pcard.revealed{ animation:nocFlipIn .55s cubic-bezier(.2,.8,.25,1) both; cursor:default; }
+.noc-pcard.noc-rar-rare{ box-shadow:0 0 0 1px #5c5783, 0 8px 22px rgba(0,0,0,.6); }
+.noc-pcard.noc-rar-epic, .noc-pcard.noc-rar-legendary{ box-shadow:0 0 0 1px var(--rc-edge), 0 0 46px var(--rc-glow); }
+.noc-pcard-closed{ flex:1; display:flex; align-items:center; justify-content:center; background:linear-gradient(160deg,#2b2741,#0f101a); }
+.noc-pcard-closed .noc-ball{ opacity:.5; }
+.noc-pcard-head{ display:flex; justify-content:space-between; padding:8.4px 9.8px; }
+.noc-pcard-rarity{ font:600 8.5px/1 'Inter',sans-serif; text-transform:uppercase; letter-spacing:.06em; }
+.noc-pcard-role{ font-size:9px; color:rgba(233,233,237,.55); }
+.noc-pcard-body{ flex:1; position:relative; display:flex; align-items:flex-end; justify-content:center; overflow:hidden; }
+.noc-pcard-watermark{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:64px; font-weight:700; color:rgba(233,233,237,.07); }
+.noc-pcard-photo{ position:relative; width:64%; height:74%; border-radius:8px 8px 0 0; display:flex; align-items:flex-end; justify-content:center;
+  background:repeating-linear-gradient(135deg,rgba(233,233,237,.05) 0 6px,transparent 6px 12px), linear-gradient(180deg,#3f424d,#292b31); }
+.noc-pcard-photo span{ font-size:8px; text-transform:uppercase; color:#75798c; padding-bottom:6px; }
+.noc-pcard-obj{ width:56px; height:56px; border-radius:12px; background:rgba(233,233,237,.06); border:1px solid rgba(233,233,237,.12);
+  display:flex; align-items:center; justify-content:center; font-size:24px; }
+.noc-pcard-foot{ padding:9.8px; background:linear-gradient(180deg,transparent,rgba(15,16,26,.72)); }
+.noc-pcard-namerow{ display:flex; justify-content:space-between; align-items:flex-start; gap:4px; }
+.noc-pcard-name{ font-size:11.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+.noc-pcard-team{ font-size:8.5px; text-transform:uppercase; color:#9397ab; }
+.noc-pcard-ovr{ font-size:19px; font-weight:700; flex:none; }
+.noc-pcard-stats{ display:grid; grid-template-columns:repeat(2,1fr); gap:2px 8px; margin-top:6px; padding-top:6px; border-top:1px solid rgba(233,233,237,.12); }
+.noc-cards-grid.solo .noc-pcard-stats{ grid-template-columns:repeat(4,1fr); }
+.noc-pcard-stat{ font-size:9px; color:#75798c; }
+.noc-pcard-stat b{ font-size:10.5px; color:#e9e9ed; font-weight:600; margin-left:2px; }
+.noc-pick-btn{ width:100%; margin-top:8px; min-height:32px; border-radius:7px; border:none; cursor:pointer; font:600 10.5px/1 'Inter',sans-serif;
+  background:#9184d9; color:#161826; }
+.noc-pick-btn[disabled]{ background:#3a3f47; color:#7d838c; cursor:not-allowed; }
+
+/* ---------- End-of-season overlay ---------- */
+.noc-eos-overlay{ position:fixed; inset:0; z-index:70; overflow-y:auto; display:flex; justify-content:center;
+  background:radial-gradient(100% 70% at 50% 0%, #262a60 0%, #12131f 70%); }
+.noc-eos-overlay.noc-hidden{ display:none; }
+.noc-eos-col{ width:100%; max-width:440px; padding:28px 16.8px 40px; display:flex; flex-direction:column; gap:16.8px; animation:nocFadeUp .45s ease both; }
+.noc-eos-placement{ text-align:center; }
+.noc-eos-num{ font-size:56px; font-weight:700; color:#e9e9ed; letter-spacing:-.04em; line-height:1; margin:6px 0; }
+.noc-eos-sub{ font-size:12.5px; color:#cfd3e5; }
+.noc-eos-panel{ border-radius:14px; padding:14px 16.8px; background:linear-gradient(140deg,#2b2741,#1d1f30); border:1px solid #5d5294; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.noc-eos-panel-kicker{ font:600 9.5px/1 'Inter',sans-serif; text-transform:uppercase; letter-spacing:.1em; color:#b5afe8; }
+.noc-eos-panel-sub{ font-size:11px; color:#9397ab; margin-top:2px; }
+.noc-eos-credits{ font-size:30px; font-weight:700; color:#b5abfc; white-space:nowrap; }
+.noc-eos-row{ display:flex; align-items:center; gap:11.2px; padding:11.2px; border-radius:8px; background:#232532; }
+.noc-eos-row.first{ border:1px solid #796cbf; }
+.noc-eos-avatar{ width:34px; height:34px; border-radius:99px; background:linear-gradient(150deg,#3f424d,#292b31); display:flex; align-items:center; justify-content:center; font:600 11px/1 'Inter',sans-serif; flex:none; }
+.noc-eos-award{ font:600 9.5px/1 'Inter',sans-serif; text-transform:uppercase; color:#796cbf; }
+.noc-eos-name{ font-size:13px; font-weight:600; margin-top:1px; }
+.noc-eos-value{ font-size:15px; font-weight:700; margin-left:auto; white-space:nowrap; }
+.noc-eos-summary{ border-radius:8px; background:rgba(35,37,50,.7); padding:11.2px; font-size:12px; color:#cfd3e5; line-height:1.6; }
+
+@media (max-width:380px){ .noc-slot{ width:82px; } }
+
+/* ---------- Restyle of REUSED legacy DOM (match feed / roster rows) ----------
+   These elements are the real, still-functioning renderStrip()/renderMatchFeed()/
+   renderRoster() output, just relocated into the Nocturne tab panels — restyled
+   here via their existing class names instead of duplicating their markup. */
+#noc-panel-stagione .next-match-panel{ position:relative; border-radius:14px; padding:16.8px; overflow:hidden;
+  background:linear-gradient(150deg,#262a60,#1c1e33); border:1px solid #423a6a; margin:0; }
+#noc-panel-stagione .next-match-panel::before{ content:''; position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(90% 120% at 100% 0%, rgba(145,132,217,.22), transparent 60%); }
+#noc-panel-stagione .nmp-label{ position:relative; font:600 9.5px/1 'Inter',sans-serif; text-transform:uppercase; letter-spacing:.14em; color:#b5afe8; }
+#noc-panel-stagione .nmp-opponent{ position:relative; font-size:13px; font-weight:600; margin-top:8.4px; display:flex; align-items:center; gap:6px; color:#e9e9ed; }
+#noc-panel-stagione .nmp-actions{ position:relative; display:flex; gap:8.4px; margin-top:11.2px; }
+#noc-panel-stagione .nmp-actions .modal-btn{ min-height:44px; border-radius:8px; font:600 13px/1 'Inter',sans-serif; border:1px solid #9184d9; background:rgba(145,132,217,.1); color:#e7e5fe; flex:1; cursor:pointer; }
+#noc-panel-stagione .nmp-actions .modal-btn.secondary{ border-color:rgba(233,233,237,.18); background:transparent; color:#cfd3e5; flex:none; padding:0 14px; }
+#noc-panel-stagione #run-feed-title{ font:600 9.5px/1 'Inter',sans-serif; text-transform:uppercase; letter-spacing:.1em; color:#75798c; margin-top:8.4px; }
+#noc-panel-stagione .feed-row{ padding:9.8px 11.2px; border-radius:8px; background:#232532; margin-top:6px; animation:nocTick .3s ease both; }
+#noc-panel-stagione .feed-row-main{ display:flex; align-items:center; gap:8px; cursor:pointer; }
+#noc-panel-stagione .feed-stage{ font-size:10.5px; color:#75798c; flex:none; }
+#noc-panel-stagione .feed-opponent{ flex:1; font-size:12px; color:#cfd3e5; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#noc-panel-stagione .feed-score{ font-size:12.5px; font-weight:600; color:#9397ab; }
+#noc-panel-stagione .feed-score.win{ color:#d2cefd; }
+#noc-panel-stagione .feed-chevron{ color:#75798c; flex:none; }
+#noc-panel-stagione .noc-stagione-sub.noc-hidden{ display:none; }
+/* Old game markup for the season/match screen — no longer relocated into
+   the Nocturne panel (see nocRenderMatchTab). Kept in the document so the
+   game's own renderStrip()/renderMatchFeed() calls (still invoked from
+   render()) don't throw, but always hidden: the visible Stagione tab is
+   100% fresh markup now. */
+#week-strip, #run-feed-title, #match-feed{ display:none !important; }
+
+/* Shared by the live Rosa tab AND the team-creation wizard's roster-review
+   step (#noc-club-empty) — both use the real renderRoster() output. */
+#noc-panel-rosa #roster-box, #noc-club-empty #noc-wiz-roster-box{ display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+#noc-panel-rosa .player-row, #noc-club-empty .player-row{ display:flex; align-items:center; gap:11px; padding:11px; border-radius:8px; background:#232532; box-shadow:0 0 0 1px #3f424d; border-left:none !important; cursor:grab; }
+#noc-panel-rosa .role-badge, #noc-club-empty .role-badge{ width:30px;height:30px;border-radius:7px;background:#292b31;color:#cfd3e5;display:flex;align-items:center;justify-content:center;font:600 11px/1 'Inter',sans-serif; flex:none; }
+#noc-panel-rosa .player-name, #noc-club-empty .player-name{ font-size:12.5px; font-weight:600; color:#e9e9ed; }
+#noc-panel-rosa .player-club, #noc-club-empty .player-club{ font-size:10px; color:#75798c; }
+#noc-panel-rosa .player-mini-stats, #noc-club-empty .player-mini-stats{ font-size:10px; color:#9397ab; margin-top:2px; }
+#noc-panel-rosa .player-mini-stats b, #noc-club-empty .player-mini-stats b{ color:#e9e9ed; font-weight:600; }
+#noc-panel-rosa .fatigue-bar-mini, #noc-club-empty .fatigue-bar-mini{ height:3px; border-radius:99px; background:#292b31; margin-top:4px; overflow:hidden; width:100%; }
+#noc-panel-rosa .fatigue-bar-mini span, #noc-club-empty .fatigue-bar-mini span{ display:block; height:100%; background:linear-gradient(90deg,#5d5294,#b5abfc); }
+#noc-panel-rosa .starter-toggle, #noc-club-empty .starter-toggle{ margin-left:auto; background:none; border:none; color:#b5abfc; font-size:18px; cursor:pointer; flex:none; }
+#noc-panel-rosa .bench-label, #noc-club-empty .bench-label{ font-size:10.5px; color:#75798c; text-transform:uppercase; letter-spacing:.06em; margin:8px 0 2px; }
+#noc-panel-rosa .player-traits, #noc-club-empty .player-traits{ display:none; }
+#noc-panel-rosa .roster-message, #noc-club-empty .roster-message{ font-size:11.5px; color:#b5afe8; min-height:0; }
+#noc-panel-rosa .roster-message:empty, #noc-club-empty .roster-message:empty{ display:none; }
+
+/* Team-creation wizard: form inputs + back-link ghost button */
+#noc-club-empty .noc-input{ width:100%; min-height:40px; padding:8px 10px; font:400 13px/1.3 'Inter',sans-serif;
+  color:#e9e9ed; background:#232532; border:1px solid #3f424d; border-radius:8px; }
+#noc-club-empty .noc-input:focus-visible{ outline:2px solid #9184d9; outline-offset:1px; }
+#noc-club-empty .noc-btn-ghost{ background:none; border:none; color:#9397ab; font:400 11.5px/1 'Inter',sans-serif; cursor:pointer; padding:6px 0; min-height:32px; }
+#noc-club-empty .noc-btn-ghost:hover{ color:#d2cefd; }
+
+/* Shop tab: real renderShopScreen() output, targeted (not re-implemented) */
+#noc-shop-wrap{ font-family:'Inter',sans-serif; color:#e9e9ed; }
+#noc-shop-wrap h3{ font-size:14.5px; font-weight:600; margin:4px 0 8px; }
+#noc-shop-wrap p{ font-size:11.5px; color:#b2b6ca; line-height:1.5; }
+#noc-shop-wrap .modal-btn{ min-height:44px; border-radius:8px; font:600 13px/1 'Inter',sans-serif; cursor:pointer; border:1px solid #9184d9; background:rgba(145,132,217,.1); color:#e7e5fe; padding:0 14px; }
+#noc-shop-wrap .modal-btn[disabled]{ opacity:.55; border-color:rgba(233,233,237,.14); background:transparent; color:#75798c; cursor:not-allowed; }
+#noc-shop-wrap .modal-btn.secondary{ border-color:rgba(233,233,237,.18); background:transparent; color:#cfd3e5; }
+#noc-shop-wrap #btn-close-shop{ display:none; }
+#noc-shop-wrap .tactic-label{ font:600 9.5px/1 'Inter',sans-serif; text-transform:uppercase; letter-spacing:.1em; color:#75798c; margin:14px 0 6px; }
+#noc-shop-wrap .swatch-grid{ display:flex; flex-wrap:wrap; gap:8px; }
+#noc-shop-wrap .swatch{ width:28px; height:28px; border-radius:99px; cursor:pointer; box-shadow:0 0 0 1px #3f424d; }
+#noc-shop-wrap .swatch.selected{ box-shadow:0 0 0 2px #b5abfc; }
+#noc-shop-wrap .swatch.locked{ opacity:.35; cursor:not-allowed; }
+#noc-shop-wrap .tactic-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:8px; }
+#noc-shop-wrap .shop-item{ background:#232532; border-radius:8px; padding:8px; font-size:11px; color:#cfd3e5; box-shadow:0 0 0 1px #3f424d; animation:nocFadeUp .3s ease both; }
 </style>
 </head>
 <body>
 
-<div class="wrap draft-wrap screen-team" id="league-select-screen">
+<div class="wrap draft-wrap screen-team hidden" id="league-select-screen">
   <div class="hub-header">
     <div>
       <div class="eyebrow">Benvenuto</div>
@@ -1634,7 +2007,7 @@ body{
   <button class="modal-btn" style="width:100%;margin-top:14px;" onclick="rtgLeaveHub()">Prossima Partita</button>
 </div>
 
-<div class="wrap screen-hub hidden" id="hub-screen">
+<div class="wrap screen-hub" id="hub-screen">
   <div class="hub-header" id="hub-main-header">
     <div>
       <div class="eyebrow">Prototipo — Calendario-Hub</div>
@@ -2065,579 +2438,443 @@ function getClubColor(clubName){
   return (CLUB_COLORS && CLUB_COLORS[clubName]) || null;
 }
 
-/* ============ BOOSTER PACK OPENING ANIMATION ============
-   Porting fedele di booster-scenes.jsx (handoff design), motore vanilla JS
-   guidato da un solo clock di storia `s` (0..6s) — nessuno stato interno,
-   nessuna keyframe CSS: ogni frame ricalcola tutto da s (come da spec). */
-
-const BP_W = 1080, BP_H = 1920;
-const BP_C = {
-  bg:'#0a1526', surface:'#16233f', text:'#f5f7fa', muted:'#8b97a3', dim:'#5f6b78',
-  edge:'#2a3a52', edgeSoft:'#0d1f3a', accent:'#ff6b1a', accent400:'#ffb27a',
-  accent900:'#0d1f3a'
+/* ============ NOCTURNE PACK-OPENING OVERLAY ("flip" variant only) ============
+   Replaces the previous cinematic booster-pack engine with the simpler
+   "flip" reveal described in the Nocturne handoff: a closed pack card ->
+   tap to open -> cards revealed one per tap with a flipIn entrance (or all
+   at once via the "Tutte" button) in a 2-col grid (232px centered when
+   there is a single card). Two callers, two contracts — both preserved
+   exactly as before:
+     - openDraftPack(opts): opts.pool = [{player,rarity,blocked}, ...].
+       Returns a Promise that resolves with the CHOSEN pool item, and only
+       once the user has revealed a card and tapped "Seleziona" on it — the
+       pick-1-of-5 draft mechanic is unchanged, this is a pure reskin.
+     - openBoosterPack(opts): opts.cards = [{n,rarity,tint,icon}, ...] (shop
+       cosmetic rewards already rolled/applied by the caller). All cards
+       must be revealed (individually or via "Tutte") before "Fatto"
+       appears; opts.onComplete() fires when the user closes the overlay.
+*/
+const NOC_RARITY_CLASS = {
+  common:'noc-rar-common', uncommon:'noc-rar-uncommon', rare:'noc-rar-rare',
+  epic:'noc-rar-epic', legendary:'noc-rar-legendary'
 };
-const BP_PACK = { w:486, h:664, cx:540, cy:902 };
-const BP_PACK_L = BP_PACK.cx - BP_PACK.w/2;
-const BP_PACK_T = BP_PACK.cy - BP_PACK.h/2;
-const BP_STRIP_H = 96;
-const BP_CUT_Y = BP_PACK_T + BP_STRIP_H;
-const BP_CARD = { w:172, h:240 };
-
-const BP_SPARKS = Array.from({ length:54 }, (_, i) => {
-  const r = (n) => (Math.sin(i*12.9898 + n*78.233) * 43758.5453) % 1;
-  const f = (n) => Math.abs(r(n));
-  return { at:f(1), ang:-Math.PI/2 + (f(2)-0.5)*2.3, spd:260+f(3)*620, size:3+f(4)*5, life:0.3+f(5)*0.4, warm:f(6)>0.6 };
-});
-
-function bpEaseOutCubic(t){ return 1-Math.pow(1-t,3); }
-function bpEaseInOutCubic(t){ return t<0.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2; }
-function bpEaseOutBack(t){ const c1=1.70158, c3=c1+1; return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2); }
-function bpEaseInOutSine(t){ return -(Math.cos(Math.PI*t)-1)/2; }
-function bpClamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
-function bpAnimate(from,to,start,end,ease){
-  return function(s){
-    if(end<=start) return s>=end ? to : from;
-    const t = bpClamp((s-start)/(end-start),0,1);
-    return from + (to-from)*ease(t);
-  };
-}
-const BP_MOTION = {
-  enter:(from,to,a,b)=>bpAnimate(from,to,a,b,bpEaseOutCubic),
-  glide:(from,to,a,b)=>bpAnimate(from,to,a,b,bpEaseInOutCubic),
-  pop:(from,to,a,b)=>bpAnimate(from,to,a,b,bpEaseOutBack)
+const NOC_RARITY_LABEL = {
+  common:'COMUNE', uncommon:'COMUNE', rare:'SPECIAL', epic:'ELITE', legendary:'LEGGENDA'
 };
-function bpInterpolate(xs, ys, ease){
-  return function(s){
-    if(s<=xs[0]) return ys[0];
-    if(s>=xs[xs.length-1]) return ys[ys.length-1];
-    for(let i=0;i<xs.length-1;i++){
-      if(s>=xs[i] && s<=xs[i+1]){
-        const t=(s-xs[i])/(xs[i+1]-xs[i]);
-        return ys[i] + (ys[i+1]-ys[i])*ease(t);
-      }
-    }
-    return ys[ys.length-1];
+const NOC_WOW_RARITIES = { epic:true, legendary:true };
+const NOC_ROLE_LABEL = { G:'Guardia', F:'Ala', C:'Centro' };
+const NOC_SHOP_LABEL_TO_CLASS = { 'COMUNE':'noc-rar-common', 'NON COMUNE':'noc-rar-rare', 'RARA':'noc-rar-epic', 'ULTRA':'noc-rar-legendary' };
+const NOC_SHOP_LABEL_TO_NOCLABEL = { 'COMUNE':'COMUNE', 'NON COMUNE':'SPECIAL', 'RARA':'ELITE', 'ULTRA':'LEGGENDA' };
+const NOC_SHOP_WOW_LABELS = { 'RARA':true, 'ULTRA':true };
+
+function nocGlowColorFor(rarClass){
+  const glows = {
+    'noc-rar-epic':'rgba(145,132,217,.4)', 'noc-rar-legendary':'rgba(181,171,252,.55)',
+    'noc-rar-rare':'rgba(121,114,169,.28)'
   };
+  return glows[rarClass] || 'rgba(117,121,140,.18)';
 }
 
-let bpDom = null;
-function bpBuildDom(){
-  if(bpDom) return bpDom;
+function nocInitials(nome, cognome){
+  const a = (nome||'').trim().charAt(0) || '';
+  const b = (cognome||'').trim().charAt(0) || '';
+  return (a+b).toUpperCase() || '??';
+}
+
+let nocPackDom = null;
+let nocPrevBodyOverflow = '';
+
+function nocDestroyPackDom(){
+  if(nocPackDom && nocPackDom.overlay && nocPackDom.overlay.parentNode){
+    nocPackDom.overlay.parentNode.removeChild(nocPackDom.overlay);
+  }
+  nocPackDom = null;
+}
+
+function nocBuildPackOverlay(){
+  nocDestroyPackDom();
   const overlay = document.createElement('div');
-  overlay.id = 'booster-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#000;display:none;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;';
+  overlay.className = 'noc-scope noc-pack-overlay';
+  overlay.style.background = 'radial-gradient(90% 60% at 50% 30%,#22243d 0%,#0f101a 75%)';
 
-  const scaler = document.createElement('div');
-  scaler.id = 'booster-scaler';
-  scaler.style.cssText = `position:relative;width:${BP_W}px;height:${BP_H}px;transform-origin:50% 50%;flex-shrink:0;`;
+  const col = document.createElement('div');
+  col.className = 'noc-pack-col';
+
+  const headband = document.createElement('div');
+  headband.className = 'noc-pack-headband';
+  const headLeft = document.createElement('div');
+  const kicker = document.createElement('div');
+  kicker.className = 'noc-kicker';
+  kicker.textContent = 'APERTURA PACCHETTO';
+  const title = document.createElement('div');
+  title.className = 'noc-pack-title';
+  headLeft.appendChild(kicker);
+  headLeft.appendChild(title);
+  const closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
+  closeBtn.className = 'noc-btn noc-btn-secondary';
+  closeBtn.style.minHeight = '36px';
+  closeBtn.textContent = 'Chiudi';
+  closeBtn.style.display = 'none';
+  headband.appendChild(headLeft);
+  headband.appendChild(closeBtn);
 
   const stage = document.createElement('div');
-  stage.style.cssText = `position:absolute;inset:0;background:${BP_C.bg};overflow:hidden;`;
+  stage.className = 'noc-pack-stage';
 
-  const glowLayer = document.createElement('div');
-  glowLayer.style.cssText = 'position:absolute;inset:0;background:radial-gradient(58% 34% at 50% 46%, rgba(255,107,26,0.22), transparent 70%);';
-
-  const vignette = document.createElement('div');
-  vignette.style.cssText = 'position:absolute;inset:0;background:radial-gradient(120% 90% at 50% 50%, transparent 45%, rgba(3,6,12,0.72) 100%);';
-
-  const camera = document.createElement('div');
-  camera.style.cssText = 'position:absolute;inset:0;transform-origin:50% 50%;';
-
-  function buildPackArt(offsetY){
-    const art = document.createElement('div');
-    art.style.cssText = `position:absolute;left:0;top:${offsetY}px;width:${BP_PACK.w}px;height:${BP_PACK.h}px;background:linear-gradient(158deg,${BP_C.edge} 0%,${BP_C.edgeSoft} 44%,#081120 62%,${BP_C.accent900} 100%);`;
-    const sheen = document.createElement('div');
-    sheen.className = 'bp-sheen';
-    sheen.style.cssText = 'position:absolute;inset:0;';
-    art.appendChild(sheen);
-    const radial = document.createElement('div');
-    radial.style.cssText = 'position:absolute;inset:0;background:radial-gradient(120% 70% at 50% 8%, rgba(255,107,26,0.20), transparent 60%);';
-    art.appendChild(radial);
-    const perf = document.createElement('div');
-    perf.style.cssText = `position:absolute;left:0;right:0;top:${BP_STRIP_H-1}px;height:1px;background:repeating-linear-gradient(90deg,${BP_C.edge} 0 9px, rgba(0,0,0,0) 9px 18px);`;
-    art.appendChild(perf);
-    const packLbl = document.createElement('div');
-    packLbl.textContent = 'PACK';
-    packLbl.style.cssText = `position:absolute;left:0;right:0;top:30px;text-align:center;font:500 17px/1 Inter,Arial,sans-serif;letter-spacing:0.42em;color:${BP_C.muted};`;
-    art.appendChild(packLbl);
-
-    const markWrap = document.createElement('div');
-    markWrap.style.cssText = 'position:absolute;left:0;right:0;top:214px;display:flex;justify-content:center;';
-    const markImg = document.createElement('img');
-    markImg.src = 'loghi/lnp-mark.png';
-    markImg.alt = 'LNP';
-    markImg.style.cssText = 'width:230px;height:auto;filter:drop-shadow(0 0 22px rgba(255,107,26,0.35));';
-    markWrap.appendChild(markImg);
-    art.appendChild(markWrap);
-
-    const title = document.createElement('div');
-    title.textContent = 'Serie A2';
-    title.style.cssText = `position:absolute;left:0;right:0;top:428px;text-align:center;font:500 40px/1.1 Inter,Arial,sans-serif;letter-spacing:0.02em;color:${BP_C.text};`;
-    art.appendChild(title);
-
-    const sub = document.createElement('div');
-    sub.textContent = '2025 / 26';
-    sub.style.cssText = `position:absolute;left:0;right:0;top:480px;text-align:center;font:400 22px/1 Inter,Arial,sans-serif;letter-spacing:0.30em;color:${BP_C.muted};`;
-    art.appendChild(sub);
-
-    const footRow = document.createElement('div');
-    footRow.style.cssText = `position:absolute;left:34px;right:34px;bottom:34px;display:flex;justify-content:space-between;font:400 15px/1 Inter,Arial,sans-serif;letter-spacing:0.22em;color:${BP_C.muted};`;
-    footRow.innerHTML = '<span>5 CARTE</span><span>REGULAR</span>';
-    art.appendChild(footRow);
-
-    return art;
-  }
-
-  const packWrap = document.createElement('div');
-  packWrap.style.cssText = `position:absolute;left:${BP_PACK_L}px;top:${BP_PACK_T}px;width:${BP_PACK.w}px;height:${BP_PACK.h}px;transform-origin:50% 100%;`;
-
-  const stripClip = document.createElement('div');
-  stripClip.style.cssText = `position:absolute;left:0;top:0;width:${BP_PACK.w}px;height:${BP_STRIP_H}px;overflow:hidden;border-radius:18px 18px 2px 2px;transform-origin:20% 100%;`;
-  const stripArt = buildPackArt(0);
-  stripClip.appendChild(stripArt);
-
-  const bodyClip = document.createElement('div');
-  bodyClip.style.cssText = `position:absolute;left:0;top:${BP_STRIP_H}px;width:${BP_PACK.w}px;height:${BP_PACK.h-BP_STRIP_H}px;overflow:hidden;border-radius:2px 2px 18px 18px;box-shadow:0 40px 90px rgba(0,0,0,0.55);`;
-  const bodyArt = buildPackArt(-BP_STRIP_H);
-  bodyClip.appendChild(bodyArt);
-
-  packWrap.appendChild(stripClip);
-  packWrap.appendChild(bodyClip);
-  camera.appendChild(packWrap);
-
-  const cardsLayer = document.createElement('div');
-  cardsLayer.style.cssText = 'position:absolute;inset:0;perspective:1500px;';
-  camera.appendChild(cardsLayer);
-
-  const cutLayer = document.createElement('div');
-  cutLayer.style.cssText = 'position:absolute;inset:0;z-index:60;';
-  const cutLine = document.createElement('div');
-  cutLine.style.cssText = `position:absolute;top:${BP_CUT_Y-1}px;height:2px;background:linear-gradient(90deg, rgba(255,107,26,0.15), ${BP_C.accent400});box-shadow:0 0 16px rgba(255,107,26,0.8);`;
-  const cutHead = document.createElement('div');
-  cutHead.style.cssText = `position:absolute;top:${BP_CUT_Y-34}px;width:4px;height:68px;background:linear-gradient(180deg, rgba(0,0,0,0), ${BP_C.text}, rgba(0,0,0,0));box-shadow:0 0 26px 8px rgba(255,107,26,0.65);`;
-  cutLayer.appendChild(cutLine);
-  cutLayer.appendChild(cutHead);
-  const sparkEls = BP_SPARKS.map(()=>{
-    const sp = document.createElement('div');
-    sp.style.cssText = 'position:absolute;border-radius:50%;display:none;';
-    cutLayer.appendChild(sp);
-    return sp;
-  });
-  camera.appendChild(cutLayer);
-
-  stage.appendChild(glowLayer);
-  stage.appendChild(vignette);
-  stage.appendChild(camera);
-
-  const caption = document.createElement('div');
-  caption.style.cssText = 'position:absolute;left:0;right:0;top:218px;text-align:center;';
-  const kicker = document.createElement('div');
-  kicker.style.cssText = `font:400 20px/1 Inter,Arial,sans-serif;letter-spacing:0.34em;color:${BP_C.accent};`;
-  const title2 = document.createElement('div');
-  title2.style.cssText = `margin-top:18px;font:500 78px/1 Inter,Arial,sans-serif;letter-spacing:-0.02em;color:${BP_C.text};`;
-  caption.appendChild(kicker);
-  caption.appendChild(title2);
-  stage.appendChild(caption);
-
-  const footer = document.createElement('div');
-  footer.style.cssText = `position:absolute;left:0;right:0;bottom:190px;text-align:center;font:400 19px/1 Inter,Arial,sans-serif;letter-spacing:0.28em;color:${BP_C.muted};`;
-  stage.appendChild(footer);
-
+  const foot = document.createElement('div');
+  foot.className = 'noc-pack-foot';
   const hint = document.createElement('div');
-  hint.className = 'bp-hint';
-  stage.appendChild(hint);
-
-  const actions = document.createElement('div');
-  actions.className = 'bp-actions';
+  hint.className = 'noc-pack-hint';
+  const ctaBtn = document.createElement('button');
+  ctaBtn.type = 'button';
+  ctaBtn.className = 'noc-btn noc-btn-primary noc-btn-full';
+  ctaBtn.textContent = 'Tocca per rivelare';
   const revealAllBtn = document.createElement('button');
   revealAllBtn.type = 'button';
-  revealAllBtn.className = 'modal-btn secondary small';
-  revealAllBtn.textContent = 'Rivela Tutte';
-  const continueBtn = document.createElement('button');
-  continueBtn.type = 'button';
-  continueBtn.className = 'modal-btn';
-  continueBtn.textContent = 'Continua';
-  continueBtn.style.display = 'none';
-  actions.appendChild(revealAllBtn);
-  actions.appendChild(continueBtn);
-  stage.appendChild(actions);
+  revealAllBtn.className = 'noc-btn noc-btn-secondary';
+  revealAllBtn.textContent = 'Tutte';
+  revealAllBtn.style.display = 'none';
+  foot.appendChild(hint);
+  foot.appendChild(ctaBtn);
+  foot.appendChild(revealAllBtn);
 
-  scaler.appendChild(stage);
-  overlay.appendChild(scaler);
+  col.appendChild(headband);
+  col.appendChild(stage);
+  col.appendChild(foot);
+  overlay.appendChild(col);
   document.body.appendChild(overlay);
 
-  bpDom = { overlay, scaler, stage, glowLayer, camera, packWrap, stripClip, stripArt, bodyClip, bodyArt,
-    cardsLayer, cutLayer, cutLine, cutHead, sparkEls, caption, kicker, title2, footer, hint, actions, revealAllBtn, continueBtn };
-  return bpDom;
+  nocPackDom = { overlay, col, headband, kicker, title, closeBtn, stage, foot, hint, ctaBtn, revealAllBtn };
+  return nocPackDom;
 }
 
-function bpInjectStyle(){
-  if(document.getElementById('bp-style')) return;
-  const st = document.createElement('style');
-  st.id = 'bp-style';
-  st.textContent = `
-    @keyframes bpPulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(255,107,26,0.55);} 50%{ box-shadow:0 0 0 24px rgba(255,107,26,0);} }
-    .bp-pulse{ animation:bpPulse 1.3s ease-out infinite; border-radius:18px; cursor:pointer; }
-    .bp-hint{ position:absolute;left:0;right:0;bottom:132px;text-align:center;font:500 21px/1 Inter,Arial,sans-serif;letter-spacing:0.06em;color:#ffb27a;opacity:0;transition:opacity .3s ease;pointer-events:none; }
-    .bp-hint.show{ opacity:1; }
-    .bp-actions{ position:absolute;left:0;right:0;bottom:56px;display:flex;gap:14px;justify-content:center;opacity:0;transition:opacity .3s ease;pointer-events:none; z-index:80; }
-    .bp-actions.show{ opacity:1;pointer-events:auto; }
-    .bp-actions .modal-btn{ min-width:190px; }
-  `;
-  document.head.appendChild(st);
+function nocFlashBurst(){
+  const flash = document.createElement('div');
+  flash.className = 'noc-pack-flash';
+  document.body.appendChild(flash);
+  setTimeout(function(){ if(flash.parentNode) flash.parentNode.removeChild(flash); }, 520);
 }
 
-function bpCardFaceHtml(data, rare){
-  const dotColor = rare ? BP_C.accent : BP_C.dim;
-  const numColor = rare ? BP_C.accent : BP_C.text;
-  const rarColor = rare ? BP_C.accent : BP_C.muted;
-  const border = rare ? BP_C.accent : BP_C.edge;
-  const shadow = rare ? '0 0 40px rgba(255,107,26,0.55), 0 18px 34px rgba(0,0,0,0.5)' : '0 14px 28px rgba(0,0,0,0.45)';
-  const iconHtml = (data.icon && typeof iconSvg === 'function') ? iconSvg(data.icon, '30px') : '';
-  return `<div style="position:absolute;inset:0;border-radius:12px;overflow:hidden;background:linear-gradient(168deg,${BP_C.surface} 0%,#0d1526 100%);border:1px solid ${border};box-shadow:${shadow};display:flex;flex-direction:column;padding:12px;gap:9px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;">
-      <span style="font:500 19px/1 Inter,Arial,sans-serif;color:${numColor};">${data.n}</span>
-      <span style="width:7px;height:7px;border-radius:7px;background:${dotColor};"></span>
-    </div>
-    <div style="flex:1;border-radius:7px;border:1px solid ${BP_C.edge};display:flex;align-items:center;justify-content:center;color:${BP_C.text};background:radial-gradient(95% 80% at 32% 22%, ${data.tint}, rgba(0,0,0,0) 72%), linear-gradient(200deg,${BP_C.accent900},#0a111f);">${iconHtml}</div>
-    <div style="font:500 12px/1 Inter,Arial,sans-serif;letter-spacing:0.18em;color:${rarColor};text-align:center;">${data.rarity}</div>
-  </div>`;
-}
-function bpCardBackHtml(){
-  return `<div style="position:absolute;inset:0;border-radius:12px;overflow:hidden;background:linear-gradient(160deg,${BP_C.accent900},#0a111f);border:1px solid ${BP_C.edge};box-shadow:0 14px 28px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;">
-    <div style="position:absolute;inset:0;background:repeating-linear-gradient(58deg, rgba(255,107,26,0.14) 0 2px, rgba(0,0,0,0) 2px 12px);"></div>
-    <div style="width:68px;height:68px;transform:rotate(45deg);border-radius:13px;border:1.5px solid ${BP_C.accent};opacity:0.85;box-shadow:inset 0 0 18px rgba(255,107,26,0.25);"></div>
-  </div>`;
-}
-
-function bpBuildCards(n, cardsData){
-  bpDom.cardsLayer.innerHTML = '';
-  const cardEls = [];
-  for(let i=0;i<n;i++){
-    const el = document.createElement('div');
-    el.style.cssText = `position:absolute;width:${BP_CARD.w}px;height:${BP_CARD.h}px;transform-style:preserve-3d;cursor:default;`;
-    const glow = document.createElement('div');
-    glow.style.cssText = 'position:absolute;inset:-30px;border-radius:24px;display:none;background:radial-gradient(50% 50% at 50% 50%, rgba(255,107,26,0.6), rgba(0,0,0,0) 70%);';
-    el.appendChild(glow);
-    const flip = document.createElement('div');
-    flip.style.cssText = 'position:absolute;inset:0;';
-    const back = document.createElement('div');
-    back.style.cssText = 'position:absolute;inset:0;';
-    back.innerHTML = bpCardBackHtml();
-    const face = document.createElement('div');
-    face.style.cssText = 'position:absolute;inset:0;display:none;';
-    face.innerHTML = bpCardFaceHtml(cardsData[i], false);
-    flip.appendChild(back);
-    flip.appendChild(face);
-    el.appendChild(flip);
-    bpDom.cardsLayer.appendChild(el);
-    cardEls.push({ el, glow, flip, face, back });
-  }
-  return cardEls;
+/* Face HTML for a draft candidate (player card) */
+function nocPlayerCardFace(cand){
+  const p = cand.player;
+  const rarLabel = NOC_RARITY_LABEL[cand.rarity] || 'COMUNE';
+  const roleLabel = NOC_ROLE_LABEL[p.role] || NOC_ROLE_LABEL[typeof macroRole==='function' ? macroRole(p.ruolo1) : null] || '';
+  const btnLabel = cand.blocked ? 'Limite EX' : 'Seleziona';
+  return (
+    '<div class="noc-pcard-head">' +
+      '<span class="noc-pcard-rarity" style="color:var(--rc-text);">' + rarLabel + '</span>' +
+      '<span class="noc-pcard-role">' + roleLabel + '</span>' +
+    '</div>' +
+    '<div class="noc-pcard-body">' +
+      '<span class="noc-pcard-watermark">' + nocInitials(p.nome, p.cognome) + '</span>' +
+      '<div class="noc-pcard-photo"><span>FOTO</span></div>' +
+    '</div>' +
+    '<div class="noc-pcard-foot">' +
+      '<div class="noc-pcard-namerow">' +
+        '<div style="min-width:0;">' +
+          '<div class="noc-pcard-name">' + p.cognome + '</div>' +
+          '<div class="noc-pcard-team">' + (p.club||'') + '</div>' +
+        '</div>' +
+        '<div class="noc-pcard-ovr" style="color:var(--rc-ovr);">' + p.ovr + '</div>' +
+      '</div>' +
+      '<div class="noc-pcard-stats">' +
+        '<div class="noc-pcard-stat">PPG<b>' + p.ppg + '</b></div>' +
+        '<div class="noc-pcard-stat">APG<b>' + p.apg + '</b></div>' +
+        '<div class="noc-pcard-stat">RPG<b>' + p.rpg + '</b></div>' +
+        '<div class="noc-pcard-stat">SPG<b>' + p.spg + '</b></div>' +
+      '</div>' +
+      '<button type="button" class="noc-pick-btn" ' + (cand.blocked?'disabled':'') + '>' + btnLabel + '</button>' +
+    '</div>'
+  );
 }
 
-function bpRenderFrame(s, ctx){
-  const { n, cardsData, highlight, cardEls, sparksOn } = ctx;
-
-  const sc = bpInterpolate([0,1.4,2.7,4.3,6],[1.0,1.03,1.22,1.04,1.02], bpEaseInOutCubic)(s);
-  const fy = bpInterpolate([0,1.4,2.7,4.3,6],[960,906,700,900,1000], bpEaseInOutCubic)(s);
-  bpDom.camera.style.transform = `translate(0px, ${(BP_H/2-fy)*sc}px) scale(${sc})`;
-
-  const packOp = BP_MOTION.enter(0,1,0,0.5)(s);
-  const packRise = BP_MOTION.enter(150,0,0,0.85)(s);
-  const packScale = BP_MOTION.enter(0.9,1,0,0.85)(s);
-  const float = Math.sin(s*1.55)*7*packOp;
-  const tilt = Math.sin(s*1.05)*1.1*packOp;
-  bpDom.packWrap.style.opacity = packOp;
-  bpDom.packWrap.style.transform = `translateY(${packRise+float}px) rotate(${tilt}deg) scale(${packScale})`;
-
-  const bodyY = BP_MOTION.glide(0,470,2.55,3.75)(s);
-  const bodyOp = BP_MOTION.glide(1,0,2.95,3.85)(s);
-  const stripY = BP_MOTION.glide(0,-300,2.45,3.45)(s);
-  const stripX = BP_MOTION.glide(0,210,2.45,3.6)(s);
-  const stripRot = BP_MOTION.glide(0,17,2.45,3.6)(s);
-  const stripOp = BP_MOTION.glide(1,0,2.9,3.55)(s);
-  bpDom.stripClip.style.opacity = stripOp;
-  bpDom.stripClip.style.transform = `translate(${stripX}px,${stripY}px) rotate(${stripRot}deg)`;
-  bpDom.bodyClip.style.opacity = bodyOp;
-  bpDom.bodyClip.style.transform = `translateY(${bodyY}px)`;
-
-  const sheen = ((s*0.16)%1)*200-50;
-  const sheenBg = `linear-gradient(104deg,transparent ${sheen-14}%,rgba(245,247,250,0.10) ${sheen}%,rgba(245,247,250,0.02) ${sheen+7}%,transparent ${sheen+18}%)`;
-  bpDom.stripArt.querySelector('.bp-sheen').style.background = sheenBg;
-  bpDom.bodyArt.querySelector('.bp-sheen').style.background = sheenBg;
-
-  const cp = bpAnimate(0,1,1.45,2.45,bpEaseInOutSine)(s);
-  const cutX = BP_PACK_L + cp*BP_PACK.w;
-  const cutOp = Math.min(BP_MOTION.enter(0,1,1.38,1.52)(s), BP_MOTION.glide(1,0,2.46,2.68)(s));
-  bpDom.cutLayer.style.opacity = cutOp;
-  if(cutOp>0.001){
-    bpDom.cutLine.style.left = BP_PACK_L+'px';
-    bpDom.cutLine.style.width = Math.max(0,cutX-BP_PACK_L)+'px';
-    bpDom.cutHead.style.left = (cutX-2)+'px';
-    if(sparksOn){
-      BP_SPARKS.forEach((p,i)=>{
-        const el = bpDom.sparkEls[i];
-        const ts = 1.45+p.at*1.0;
-        const age = s-ts;
-        if(age<=0 || age>=p.life){ el.style.display='none'; return; }
-        const sx0 = BP_PACK_L + p.at*BP_PACK.w;
-        const px = sx0 + Math.cos(p.ang)*p.spd*age;
-        const py = BP_CUT_Y + Math.sin(p.ang)*p.spd*age + 620*age*age;
-        const o = 1-age/p.life;
-        el.style.display='block';
-        el.style.left = px+'px'; el.style.top = py+'px';
-        el.style.width = p.size+'px'; el.style.height = p.size+'px';
-        el.style.opacity = o;
-        el.style.background = p.warm ? BP_C.text : BP_C.accent400;
-        el.style.boxShadow = `0 0 ${10+p.size*3}px rgba(255,107,26,0.95)`;
-      });
-    }
-  } else {
-    bpDom.sparkEls.forEach(el=>el.style.display='none');
-  }
-
-  const glowOp = bpInterpolate([0,1.4,2.5,3.3,6],[0.3,0.5,1,0.65,0.45], bpEaseInOutCubic)(s);
-  bpDom.glowLayer.style.opacity = glowOp;
-
-  cardsData.forEach((card,i)=>{
-    const e = BP_MOTION.enter(0,1,2.5+i*0.1,3.1+i*0.1)(s);
-    const ov = ctx.cardOverride && ctx.cardOverride[i];
-    const g = ov ? ov.row : BP_MOTION.glide(0,1,4.02+i*0.05,4.8+i*0.05)(s);
-    const flip = ov ? ov.flip : BP_MOTION.glide(0,1,4.42+i*0.09,5.0+i*0.09)(s);
-    const k = i-(n-1)/2;
-    const fanX = 540 + k*122, fanY = 552+Math.abs(k)*30, fanR = k*11;
-    const rowSpacing = n<=3 ? 232 : 196;
-    const rowX = 540 + k*rowSpacing, rowY = 1004;
-    const sx = 540+(fanX-540)*e, sy = 706+(fanY-706)*e;
-    const x = sx+(rowX-sx)*g, y = sy+(rowY-sy)*g;
-    const rot = fanR*e*(1-g);
-    const base = 0.6+0.4*e;
-    const isHi = i===highlight;
-    const hov = ctx.highlightOverride;
-    const hs = isHi ? (hov ? hov.hs : BP_MOTION.pop(0,1,5.3,5.78)(s)) : 0;
-    const dim = isHi ? 0 : (hov ? hov.dim : BP_MOTION.glide(0,1,5.3,5.85)(s));
-    const scale = base*(1+0.13*hs);
-    const lift = -50*hs;
-    const opacity = e*(1-0.45*dim);
-    const rotY = 180*(1-flip);
-    const showBack = rotY>90;
-    const z = isHi?40:10-Math.abs(k);
-
-    const cel = cardEls[i];
-    cel.el.style.left = (x-BP_CARD.w/2)+'px';
-    cel.el.style.top = (y-BP_CARD.h/2)+'px';
-    cel.el.style.zIndex = z;
-    cel.el.style.opacity = opacity;
-    cel.el.style.transform = `translateY(${lift}px) rotate(${rot}deg) scale(${scale})`;
-    cel.flip.style.transform = `rotateY(${showBack ? 180-rotY : rotY}deg)`;
-    if(showBack){ cel.back.style.display='block'; cel.face.style.display='none'; }
-    else { cel.back.style.display='none'; cel.face.style.display='block'; if(isHi && hs>0.01) cel.face.innerHTML = bpCardFaceHtml(card, true); }
-    if(hs>0){ cel.glow.style.display='block'; cel.glow.style.opacity = hs*0.9; }
-    else cel.glow.style.display='none';
-  });
-
-  const capOp = BP_MOTION.enter(0,1,0.3,0.95)(s);
-  const footOp = BP_MOTION.enter(0,1,5.45,5.95)(s);
-  bpDom.caption.style.opacity = capOp;
-  bpDom.footer.style.opacity = footOp;
+/* Face HTML for a shop cosmetic/object reward card */
+function nocObjectCardFace(cd){
+  const rarLabel = NOC_SHOP_LABEL_TO_NOCLABEL[cd.rarity] || 'COMUNE';
+  const iconHtml = (cd.icon && typeof iconSvg === 'function') ? iconSvg(cd.icon, '24px') : '◈';
+  return (
+    '<div class="noc-pcard-head">' +
+      '<span class="noc-pcard-rarity" style="color:var(--rc-text);">' + rarLabel + '</span>' +
+      '<span class="noc-pcard-role"></span>' +
+    '</div>' +
+    '<div class="noc-pcard-body" style="align-items:center;justify-content:center;">' +
+      '<div class="noc-pcard-obj" style="color:var(--rc-text);">' + iconHtml + '</div>' +
+    '</div>' +
+    '<div class="noc-pcard-foot">' +
+      '<div class="noc-pcard-namerow">' +
+        '<div class="noc-pcard-name">Oggetto</div>' +
+        '<div class="noc-pcard-ovr" style="color:var(--rc-ovr);">&#9733;</div>' +
+      '</div>' +
+    '</div>'
+  );
 }
 
-function bpFitScaler(){
-  if(!bpDom) return;
-  const vw = window.innerWidth, vh = window.innerHeight;
-  const scale = Math.min((vw*0.92)/BP_W, (vh*0.92)/BP_H);
-  bpDom.scaler.style.transform = `scale(${scale})`;
+function nocLockScroll(){
+  nocPrevBodyOverflow = document.body.style.overflow;
+  document.body.style.overflow = 'hidden';
+}
+function nocUnlockScroll(){
+  document.body.style.overflow = nocPrevBodyOverflow;
 }
 
-let bpActive = null;
-
-function bpDelay(ms){ return new Promise(function(resolve){ setTimeout(resolve, ms); }); }
-
-/* Plays the composition clock s from sFrom to sTo in real time (1:1 seconds),
-   re-rendering every frame from bpRenderFrame — this is the automatic "flourish"
-   segment (pack entrance, cut, fan-out) exactly as timed in the design handoff. */
-function bpRunAutoSegment(sFrom, sTo, ctx){
-  return new Promise(function(resolve){
-    const t0 = performance.now() - sFrom*1000;
-    function loop(now){
-      if(!bpActive || bpActive.cancelled){ resolve(); return; }
-      const s = Math.min(sTo, (now - t0) / 1000);
-      bpRenderFrame(s, ctx);
-      if(s >= sTo){ resolve(); return; }
-      requestAnimationFrame(loop);
-    }
-    requestAnimationFrame(loop);
-  });
-}
-
-/* Local (non-composition-clock) tween used to animate a single interactive
-   beat — a card flip, the row settle, the highlight pop — paced by user input
-   rather than by the fixed s timeline. */
-function bpTween(durationMs, onFrame){
-  return new Promise(function(resolve){
-    const t0 = performance.now();
-    function step(now){
-      const t = Math.min(1, (now - t0) / durationMs);
-      onFrame(t);
-      if(t < 1) requestAnimationFrame(step);
-      else resolve();
-    }
-    requestAnimationFrame(step);
-  });
-}
-
-function bpWaitClick(el){
-  return new Promise(function(resolve){
-    function handler(e){ el.removeEventListener('click', handler); resolve(e); }
-    el.addEventListener('click', handler);
-  });
-}
-
-async function openBoosterPack(opts){
+/* Shared closed-pack + grid-reveal flow. mode is 'draft' or 'shop'. */
+function nocRunPackFlow(mode, cardDefs, opts){
   opts = opts || {};
-  const cardsData = opts.cards || [
-    { n:'01', rarity:'COMUNE', tint:'rgba(96,140,204,0.62)' },
-    { n:'02', rarity:'NON COMUNE', tint:'rgba(80,186,168,0.60)' },
-    { n:'03', rarity:'RARA', tint:'rgba(160,138,232,0.75)' },
-    { n:'04', rarity:'COMUNE', tint:'rgba(214,138,86,0.58)' },
-    { n:'05', rarity:'NON COMUNE', tint:'rgba(206,110,168,0.58)' },
-  ];
-  const n = cardsData.length;
-  const highlight = opts.highlight == null ? Math.min(2, n-1) : opts.highlight;
-  const series = opts.series || 'SERIE A2 2025/26';
-  const packLabel = opts.packLabel || 'Normal Pack';
-  const footerText = opts.footer || (n+' CARTE');
-  const sparksOn = opts.sparks !== false;
-  const onComplete = opts.onComplete || function(){};
+  const n = cardDefs.length;
+  const dom = nocBuildPackOverlay();
+  dom.title.textContent = opts.packLabel || (mode==='draft' ? 'Draft Pack' : 'Pacchetto');
+  dom.overlay.classList.remove('noc-hidden');
+  nocLockScroll();
 
-  bpInjectStyle();
-  bpBuildDom();
-  bpDom.kicker.textContent = series;
-  bpDom.title2.textContent = packLabel;
-  bpDom.footer.textContent = footerText;
-  bpDom.footer.style.opacity = 0;
-  bpDom.hint.classList.remove('show');
-  bpDom.actions.classList.remove('show');
-  bpDom.revealAllBtn.style.display = 'inline-flex';
-  bpDom.continueBtn.style.display = 'none';
-  bpDom.packWrap.classList.remove('bp-pulse');
-
-  const cardEls = bpBuildCards(n, cardsData);
-  cardEls.forEach(function(c){ c.el.style.cursor = 'default'; });
-
-  const cardOverride = Array.from({ length:n }, function(){ return { row:0, flip:0 }; });
-  const highlightOverride = { hs:0, dim:0 };
-  const ctx = { n, cardsData, highlight, cardEls, sparksOn, cardOverride, highlightOverride };
-  bpActive = { ctx, done:false, cancelled:false, onComplete };
-
-  bpDom.overlay.style.display = 'flex';
-  bpFitScaler();
-
-  function finish(){
-    if(bpActive.done) return;
-    bpActive.done = true;
-    bpDom.packWrap.classList.remove('bp-pulse');
-    bpDom.hint.classList.remove('show');
-    bpDom.actions.classList.remove('show');
-    bpDom.overlay.style.display = 'none';
-    onComplete();
-  }
-
-  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if(reduced){
-    cardOverride.forEach(function(o){ o.row = 1; o.flip = 1; });
-    highlightOverride.hs = 1; highlightOverride.dim = 1;
-    bpRenderFrame(4.3, ctx);
-    bpDom.footer.style.opacity = 1;
-    finish();
-    return;
-  }
-
-  // Fase 1 — il pacchetto entra in scena (automatico, ~0.9s)
-  await bpRunAutoSegment(0, 0.9, ctx);
-  if(bpActive.cancelled) return;
-
-  // Attesa: tocca il pacchetto per strapparlo
-  bpDom.packWrap.classList.add('bp-pulse');
-  bpDom.hint.textContent = 'Tocca il pacchetto per aprirlo';
-  bpDom.hint.classList.add('show');
-  await bpWaitClick(bpDom.overlay);
-  if(bpActive.cancelled) return;
-  bpDom.hint.classList.remove('show');
-  bpDom.packWrap.classList.remove('bp-pulse');
-
-  // Fase 2 — taglio, striscia che si stacca, corpo che cade, carte a ventaglio (automatico)
-  await bpRunAutoSegment(0.9, 4.0, ctx);
-  if(bpActive.cancelled) return;
-
-  // Le carte si assestano dal ventaglio alla fila, ancora coperte (automatico, breve)
-  await bpTween(600, function(t){
-    const eT = bpEaseInOutCubic(t);
-    cardOverride.forEach(function(o){ o.row = eT; });
-    bpRenderFrame(4.0, ctx);
-  });
-  if(bpActive.cancelled) return;
-
-  // Fase 3 — reveal interattivo: l'utente tocca ogni carta per girarla
-  cardEls.forEach(function(c){ c.el.style.cursor = 'pointer'; });
-  bpDom.hint.textContent = 'Tocca ogni carta per rivelarla';
-  bpDom.hint.classList.add('show');
-  bpDom.actions.classList.add('show');
-
-  function revealCard(i){
-    if(cardOverride[i].flip >= 1) return Promise.resolve();
-    return bpTween(450, function(t){
-      cardOverride[i].flip = bpEaseInOutCubic(t);
-      bpRenderFrame(4.0, ctx);
-    });
-  }
-
-  await new Promise(function(resolveReveal){
+  return new Promise(function(resolvePromise){
+    let opened = false;
     let revealedCount = 0;
-    function checkDone(){ if(revealedCount >= n) resolveReveal(); }
-    cardEls.forEach(function(c, i){
-      const handler = function(){
-        if(cardOverride[i].flip >= 1) return;
-        c.el.removeEventListener('click', handler);
-        revealCard(i).then(function(){ revealedCount++; checkDone(); });
-      };
-      c._clickHandler = handler;
-      c.el.addEventListener('click', handler);
-    });
-    bpDom.revealAllBtn.onclick = async function(){
-      for(let i=0;i<n;i++){
-        if(cardOverride[i].flip < 1){
-          cardEls[i].el.removeEventListener('click', cardEls[i]._clickHandler);
-          await revealCard(i);
-          revealedCount++;
-          await bpDelay(70);
-        }
+    let resolved = false;
+
+    function finish(payload){
+      if(resolved) return;
+      resolved = true;
+      nocUnlockScroll();
+      dom.overlay.classList.add('noc-hidden');
+      nocDestroyPackDom();
+      resolvePromise(payload);
+    }
+
+    const closedWrap = document.createElement('div');
+    closedWrap.className = 'noc-closed-pack';
+    closedWrap.innerHTML =
+      '<svg class="noc-ball" viewBox="0 0 24 24" width="42px" height="42px" fill="none" stroke="#b5abfc" stroke-width="1.6">' +
+        '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18"/><path d="M3 12h18"/>' +
+        '<path d="M5.5 5.5c3 3 3 10 0 13"/><path d="M18.5 5.5c-3 3 -3 10 0 13"/>' +
+      '</svg>' +
+      '<div class="ncp-initials">' + (opts.packLabel||'PACK').replace(/[^A-Za-z]/g,'').slice(0,2).toUpperCase() + '</div>' +
+      '<div class="ncp-count">' + n + ' pezzi</div>';
+    dom.stage.appendChild(closedWrap);
+    dom.hint.textContent = 'Tocca il pacchetto per aprirlo';
+    dom.ctaBtn.style.display = 'inline-flex';
+    dom.ctaBtn.textContent = 'Tocca per rivelare';
+    dom.ctaBtn.onclick = openPack;
+    closedWrap.addEventListener('click', openPack);
+
+    function updateHint(){
+      if(mode==='shop'){
+        dom.hint.textContent = revealedCount>=n ? 'Pacchetto completato' : (revealedCount+'/'+n+' · Tocca per rivelare');
       }
-      checkDone();
+    }
+
+    function reveal(i, cardEls){
+      const c = cardEls[i];
+      if(c.revealed) return;
+      c.revealed = true;
+      const cd = cardDefs[i];
+      c.el.className = 'noc-pcard revealed ' + cd.rarClass;
+      c.el.innerHTML = cd.faceHtml;
+      if(typeof playDraftFlipSound === 'function') playDraftFlipSound(cd.soundRarity || 'common');
+      revealedCount++;
+      updateHint();
+      if(cd.wow){
+        nocFlashBurst();
+        dom.overlay.style.background = 'radial-gradient(90% 60% at 50% 42%,' + nocGlowColorFor(cd.rarClass) + ' 0%,#0f101a 75%)';
+      }
+      if(mode==='draft'){
+        const pickBtn = c.el.querySelector('.noc-pick-btn');
+        if(pickBtn && !cd.blocked){
+          pickBtn.addEventListener('click', function(ev){
+            ev.stopPropagation();
+            finish(cd.original);
+          });
+        }
+      } else if(revealedCount >= n){
+        dom.revealAllBtn.style.display = 'none';
+        dom.ctaBtn.style.display = 'inline-flex';
+        dom.ctaBtn.textContent = 'Fatto';
+        dom.ctaBtn.onclick = function(){ finish(); };
+        dom.closeBtn.style.display = 'inline-flex';
+      }
+    }
+
+    function openPack(){
+      if(opened) return;
+      opened = true;
+      dom.stage.innerHTML = '';
+      const grid = document.createElement('div');
+      grid.className = 'noc-cards-grid' + (n===1 ? ' solo' : '');
+      const cardEls = cardDefs.map(function(){
+        const el = document.createElement('div');
+        el.className = 'noc-pcard';
+        el.innerHTML = '<div class="noc-pcard-closed"><svg viewBox="0 0 24 24" width="30px" height="30px" fill="none" stroke="#5c5783" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18"/><path d="M3 12h18"/></svg></div>';
+        grid.appendChild(el);
+        return { el, revealed:false };
+      });
+      dom.stage.appendChild(grid);
+      dom.ctaBtn.style.display = 'none';
+      dom.revealAllBtn.style.display = 'inline-flex';
+      dom.hint.textContent = mode==='draft' ? 'Tocca una carta per rivelarla, poi scegli' : ('0/'+n+' · Tocca per rivelare');
+
+      cardEls.forEach(function(c, i){
+        c.el.addEventListener('click', function(){ reveal(i, cardEls); });
+      });
+      dom.revealAllBtn.onclick = function(){
+        let i = 0;
+        (function step(){
+          if(i>=n) return;
+          if(!cardEls[i].revealed) reveal(i, cardEls);
+          i++;
+          setTimeout(step, 180);
+        })();
+      };
+    }
+
+    dom.closeBtn.addEventListener('click', function(){
+      if(mode==='shop') finish();
+    });
+  });
+}
+
+/* Apertura pacchetto usata dal draft (career e Road to Glory condividono
+   questa stessa funzione): opts.pool è un array di {player,rarity,blocked}
+   (i 5 candidati per il ruolo del round corrente). Il reveal e la scelta
+   restano DENTRO il pacchetto: tocchi una carta per rivelarla, poi tocchi
+   "Seleziona" sulla carta scelta — esattamente come prima, solo restyled. */
+function openDraftPack(opts){
+  opts = opts || {};
+  const pool = opts.pool || [];
+  const cardDefs = pool.map(function(c){
+    const rarClass = NOC_RARITY_CLASS[c.rarity] || NOC_RARITY_CLASS.common;
+    return {
+      rarClass: rarClass,
+      soundRarity: c.rarity,
+      wow: !!NOC_WOW_RARITIES[c.rarity],
+      blocked: !!c.blocked,
+      original: c,
+      faceHtml: nocPlayerCardFace(c)
     };
   });
-  if(bpActive.cancelled) return;
-
-  cardEls.forEach(function(c){ c.el.style.cursor = 'default'; });
-  bpDom.hint.classList.remove('show');
-  bpDom.revealAllBtn.style.display = 'none';
-
-  // Fase 4 — la carta rara si solleva e si illumina, le altre si attenuano (automatico)
-  await bpTween(560, function(t){
-    highlightOverride.hs = bpEaseOutBack(t);
-    highlightOverride.dim = Math.min(1, t / 0.75);
-    bpRenderFrame(4.0, ctx);
-  });
-  if(bpActive.cancelled) return;
-  bpDom.footer.style.opacity = 1;
-
-  bpDom.continueBtn.style.display = 'inline-flex';
-  await bpWaitClick(bpDom.continueBtn);
-  finish();
+  return nocRunPackFlow('draft', cardDefs, { packLabel: opts.packLabel || 'Draft Pack' });
 }
 
-window.addEventListener('resize', bpFitScaler);
+/* Apertura pacchetto usata dal negozio: opts.cards sono gli oggetti/cosmetici
+   già estratti e già assegnati dal chiamante (rollPackItem/applyPackItem) —
+   qui si rivela soltanto la loro presentazione, tutte le carte vanno
+   rivelate (singolarmente o con "Tutte") prima che compaia "Fatto". */
+function openBoosterPack(opts){
+  opts = opts || {};
+  const cards = opts.cards || [];
+  const cardDefs = cards.map(function(cd){
+    const rarClass = NOC_SHOP_LABEL_TO_CLASS[cd.rarity] || NOC_SHOP_LABEL_TO_CLASS['COMUNE'];
+    return {
+      rarClass: rarClass,
+      soundRarity: rarClass==='noc-rar-legendary' ? 'legendary' : (rarClass==='noc-rar-epic' ? 'epic' : (rarClass==='noc-rar-rare' ? 'rare' : 'common')),
+      wow: !!NOC_SHOP_WOW_LABELS[cd.rarity],
+      blocked: false,
+      original: cd,
+      faceHtml: nocObjectCardFace(cd)
+    };
+  });
+  return nocRunPackFlow('shop', cardDefs, { packLabel: opts.packLabel || 'Pacchetto' }).then(function(){
+    if(typeof opts.onComplete === 'function') opts.onComplete();
+  });
+}
+
+/* End-of-season overlay (Nocturne handoff §7). Its CSS (.noc-eos-*) was
+   already authored; this builds and populates it from the REAL season data
+   (state.postSeason.standingsFinal for placement, computeSeasonMVP() for the
+   award row, state.record for the final record, coinsEarned from the real
+   coinsForOutcome()). CTA: "Incassa e vai allo shop" closes this overlay and
+   switches the Nocturne shell to the Shop tab (does NOT call any reset/new-
+   career navigation — this codebase has no verified "start a new season with
+   the same roster" or "return to league select from inside the career hub"
+   flow, so re-using an unrelated one here would risk leaving the app in a
+   broken screen state; landing on Shop matches the literal CTA and is safe). */
+function nocShowEndOfSeason(data){
+  data = data || {};
+  const ps = state.postSeason || {};
+  const standingsFinal = ps.standingsFinal || [];
+  const total = standingsFinal.length || 20;
+  let pos = standingsFinal.findIndex(function(t){ return t.name === state.teamName; }) + 1;
+  if(!pos) pos = total;
+
+  const mvp = data.mvp;
+  const rows = [];
+  if(mvp){
+    rows.push({ award:'MVP Squadra', nome: mvp.nome, cognome: mvp.cognome, value: mvp.ppg.toFixed(1)+' PPG' });
+  }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'noc-scope noc-eos-overlay';
+  overlay.id = 'noc-eos-overlay';
+  const col = document.createElement('div');
+  col.className = 'noc-eos-col';
+  col.innerHTML =
+    '<div class="noc-eos-placement">' +
+      '<div class="noc-kicker" style="text-align:center;">STAGIONE CONCLUSA</div>' +
+      '<div class="noc-eos-num">' + pos + '&deg;</div>' +
+      '<div class="noc-eos-sub">su ' + total + ' squadre &middot; ' + (data.message||'') + '</div>' +
+    '</div>' +
+    '<div class="noc-eos-panel">' +
+      '<div>' +
+        '<div class="noc-eos-panel-kicker">CREDITI GUADAGNATI</div>' +
+        '<div class="noc-eos-panel-sub">Piazzamento + bonus obiettivi</div>' +
+      '</div>' +
+      '<div class="noc-eos-credits">+' + (data.coinsEarned||0) + '</div>' +
+    '</div>' +
+    (rows.length ? (
+      '<div>' +
+        '<div class="noc-section-title" style="margin-bottom:8px;">Migliori della stagione</div>' +
+        rows.map(function(r,i){
+          return (
+            '<div class="noc-eos-row' + (i===0?' first':'') + '" style="margin-top:' + (i===0?'0':'6px') + ';">' +
+              '<div class="noc-eos-avatar">' + nocInitials(r.nome, r.cognome) + '</div>' +
+              '<div>' +
+                '<div class="noc-eos-award">' + r.award + '</div>' +
+                '<div class="noc-eos-name">' + r.nome + ' ' + r.cognome + '</div>' +
+              '</div>' +
+              '<div class="noc-eos-value">' + r.value + '</div>' +
+            '</div>'
+          );
+        }).join('') +
+      '</div>'
+    ) : '') +
+    '<div class="noc-eos-summary">Record finale: <b>' + state.record.w + '-' + state.record.l + '</b></div>' +
+    '<button type="button" class="noc-btn noc-btn-primary noc-btn-full" id="noc-eos-cta">Incassa e vai allo shop</button>' +
+    '<button type="button" class="noc-btn noc-btn-secondary noc-btn-full" id="noc-eos-restart" style="margin-top:8px;">Nuova Stagione</button>';
+  overlay.appendChild(col);
+  document.body.appendChild(overlay);
+  nocLockScroll();
+
+  function closeEos(){
+    nocUnlockScroll();
+    if(overlay.parentNode) overlay.parentNode.removeChild(overlay);
+  }
+  col.querySelector('#noc-eos-cta').addEventListener('click', function(){
+    closeEos();
+    if(typeof nocEnsureShell === 'function') nocEnsureShell();
+    nocActiveTab = 'shop';
+    if(typeof nocRefreshShell === 'function') nocRefreshShell();
+  });
+  col.querySelector('#noc-eos-restart').addEventListener('click', function(){
+    closeEos();
+    nocRestartSeason();
+  });
+}
+
+/* Restart button (per user request: "serve un pulsante per ricominciare la
+   stagione quando finisce"). startSeason() alone isn't enough to begin a
+   fresh season — it never resets state.week/state.record, since it's also
+   the function that boots the VERY FIRST season after the draft (where
+   those are already at their defaults). Same club, same roster, brand new
+   38-game schedule/standings. */
+function nocRestartSeason(){
+  state.week = 1;
+  state.record = { w:0, l:0 };
+  state.postSeason = null;
+  startSeason();
+  nocActiveTab = 'stagione';
+  if(typeof nocEnsureShell === 'function') nocEnsureShell();
+  if(typeof nocRefreshShell === 'function') nocRefreshShell();
+}
 
 
 const MYPLAYER_ROLES = [
@@ -3512,7 +3749,7 @@ function selectClub(clubName){
   state.formation = null;
   document.getElementById('team-select-screen').classList.add('hidden');
   document.getElementById('draft-screen').classList.remove('hidden');
-  openBoosterPack({ onComplete: renderFormationPicker });
+  renderFormationPicker();
 }
 
 function renderFormationPicker(){
@@ -3672,50 +3909,23 @@ function renderDraftRound(){
   const currentExCount = state.roster.filter(p=>p.naz==='EX').length;
   const grid = document.getElementById('draft-grid');
   grid.innerHTML='';
-  document.getElementById('draft-reveal-all-btn').style.display = pool.length ? 'block' : 'none';
+  document.getElementById('draft-reveal-all-btn').style.display = 'none';
   if(pool.length===0){
     grid.innerHTML = `<div class="tc-desc" style="grid-column:1/-1;">Nessun giocatore disponibile per questo ruolo: verra assegnato automaticamente il migliore disponibile in un ruolo affine.</div>`;
     const fallback = ALL_PLAYERS.filter(p=> !state.roster.map(r=>r.nome+'|'+r.cognome).includes(p.nome+'|'+p.cognome)).sort((a,b)=>b.ovr-a.ovr)[0];
     if(fallback) setTimeout(()=>pickPlayer(role, fallback), 400);
     return;
   }
-  pool.forEach(p=>{
+  const draftPool = pool.map(p=>{
     const isEX = p.naz==='EX';
-    const blocked = isEX && currentExCount >= MAX_EX_PLAYERS;
-    const nazBadge = p.naz ? `<span class="naz-badge ${isEX?'ex':'ita'}">${isEX?'EX':'ITA'}</span>` : '';
-    const rarity = draftRarityTier(p.ovr);
-
-    const card=document.createElement('div');
-    card.className='draft-card-flip';
-    card.innerHTML = `
-      <div class="dcf-inner">
-        <div class="dcf-back"><div class="dcf-back-mark">LNP</div></div>
-        <div class="dcf-front rarity-${rarity}">
-          <div class="c-name">${p.cognome}${nazBadge}</div>
-          <div class="c-club">${p.nome}</div>
-          <div class="stat-grid">
-            <div>PPG <span>${p.ppg}</span></div>
-            <div>APG <span>${p.apg}</span></div>
-            <div>RPG <span>${p.rpg}</span></div>
-            <div>SPG <span>${p.spg}</span></div>
-          </div>
-          <button class="pick-btn ${blocked?'disabled':''}" ${blocked?'disabled':''}>${blocked?'Limite EX (Max 2)':'Seleziona'}</button>
-        </div>
-      </div>
-    `;
-    card.addEventListener('click', (e)=>{
-      if(!card.classList.contains('flipped')){
-        flipDraftCard(card, rarity);
-        e.stopPropagation();
-      }
-    });
-    if(!blocked){
-      card.querySelector('.pick-btn').addEventListener('click', (e)=>{
-        e.stopPropagation();
-        pickPlayer(role, p);
-      });
-    }
-    grid.appendChild(card);
+    return { player:p, rarity: draftRarityTier(p.ovr), blocked: isEX && currentExCount >= MAX_EX_PLAYERS };
+  });
+  openDraftPack({
+    packLabel: isBenchRound ? 'Riserva Pack' : 'Titolare Pack',
+    footer: roleLabel,
+    pool: draftPool
+  }).then(function(picked){
+    pickPlayer(role, picked.player);
   });
 }
 
@@ -3741,12 +3951,9 @@ function pickPlayer(role, p){
   }
 }
 
-function showCareerRosterReview(){
-  document.getElementById('draft-screen').classList.add('hidden');
-  document.getElementById('career-roster-review-screen').classList.remove('hidden');
-  setRosterTarget('career-roster-box','career-roster-message');
-  renderRoster();
-}
+// showCareerRosterReview() is defined later, in the Nocturne wizard section
+// below — it now shows the Nocturne review step instead of the old
+// career-roster-review-screen.
 
 /* ============ TATTICA ============ */
 const HUB_TABS = [
@@ -4660,25 +4867,7 @@ function finishPostSeason(message, outcome){
   profile.coins += coinsEarned;
   saveProfile();
   const mvp = computeSeasonMVP();
-  const mvpHtml = mvp ? `
-    <div class="result-box" style="border-color:var(--gold);">
-      <div style="font-family:'Oswald',sans-serif;font-size:0.62rem;text-transform:uppercase;letter-spacing:1px;color:var(--gold);margin-bottom:4px;">MVP della Stagione</div>
-      <div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:1rem;">${mvp.cognome} <span style="color:var(--text-muted);font-weight:400;font-size:0.7rem;">(${mvp.club})</span></div>
-      <div style="font-family:'Oswald',sans-serif;font-size:0.68rem;color:var(--text-muted);">${mvp.ppg.toFixed(1)} PPG &middot; ${mvp.rpg.toFixed(1)} RPG &middot; ${mvp.apg.toFixed(1)} APG &middot; ${mvp.spg.toFixed(1)} SPG</div>
-    </div>
-  ` : '';
-  const modal=document.getElementById('modal-content');
-  modal.classList.remove('live-match'); modal.classList.remove('wide');
-  modal.innerHTML = `
-    <div class="m-eyebrow">Verdetto di Fine Stagione</div>
-    <h3>Playoff / Play-in / Play-out</h3>
-    <div class="result-box">${message}</div>
-    ${mvpHtml}
-    <div class="result-box" style="color:var(--lnp-orange);">+${coinsEarned} monete guadagnate (totale: ${profile.coins}). Spendile nel Negozio dal menu principale.</div>
-    <div class="result-box" style="font-family:'Oswald',sans-serif;font-size:0.65rem;max-height:200px;overflow-y:auto;line-height:1.6;">${state.postSeason.resultsLog.join('<br>')}</div>
-    <button class="modal-btn" onclick="try{localStorage.removeItem('lnp_manager_save');}catch(e){}; location.reload()">Nuova Stagione</button>
-  `;
-  document.getElementById('overlay').classList.add('show');
+  nocShowEndOfSeason({ message, coinsEarned, mvp, resultsLog: state.postSeason.resultsLog });
 }
 
 // Percorso promozione: seed 2-13 (diretti 2-7, via play-in 8-13)
@@ -4921,6 +5110,694 @@ function render(){
   renderTopPlayersPane();
   renderSummaryPanels();
   renderMyPlayerPersonalPanel();
+  nocEnsureShell();
+  nocRefreshShell();
+}
+
+/* =====================================================================
+   NOCTURNE 5-TAB SHELL — Club / Rosa / Stagione / Shop / Album
+   Wraps the EXISTING career hub-screen. Built once (nocEnsureShell),
+   refreshed on every render() (nocRefreshShell). Reuses the real,
+   already-wired elements (#week-strip, #match-feed, #roster-box, ...)
+   by relocating them into the new tab panels instead of re-implementing
+   their logic — restyle only, per the Nocturne handoff. Left completely
+   inert (hidden) whenever state.myPlayerCognome is set, since MyPlayer
+   is out of scope and keeps its own original panel/screen untouched.
+   ===================================================================== */
+const NOC_TABS = [
+  { id:'club', label:'Club' },
+  { id:'rosa', label:'Rosa' },
+  { id:'stagione', label:'Stagione' },
+  { id:'shop', label:'Shop' },
+  { id:'album', label:'Album' }
+];
+let nocActiveTab = 'club';
+let nocStagioneSub = 'partite';
+let nocPanels = null;
+let nocRosterTacticLine = null;
+
+/* =====================================================================
+   NOCTURNE TEAM-CREATION WIZARD — replaces the old league-select-screen /
+   girone-select-screen / mode-root-screen / fictional-team-screen /
+   draft-screen(formation step) / career-roster-review-screen entirely:
+   none of those are shown anymore for the Carriera path (their HTML stays
+   in the document, permanently hidden, only because a few of their real
+   functions/inputs are reused headlessly below — see notes per step).
+   Steps live inside #noc-club-empty, replacing its "Benvenuto" hero.
+   Scope: Carriera only (per explicit product decision) — MyPlayer/Road to
+   Glory keep their own original entry point, reachable via the small
+   "Altre modalità" link left in the empty-hub hero.
+   ===================================================================== */
+let nocWizardStep = null; // null | 'league' | 'girone' | 'team' | 'formation' | 'review'
+
+function nocStartWizard(){
+  nocWizardStep = 'league';
+  state.isFictionalTeam = true;
+  state.budget = 500;
+  state.roster = [];
+  nocRenderWizard();
+}
+
+function nocRenderWizard(){
+  const host = document.getElementById('noc-club-empty');
+  if(!host) return;
+  if(!nocWizardStep){
+    host.innerHTML =
+      '<div class="noc-hero">' +
+        '<div class="noc-hero-kicker">BENVENUTO</div>' +
+        '<div class="noc-hero-title">Crea la tua squadra</div>' +
+        '<div class="noc-hero-sub">Scegli il campionato e assembla la rosa per iniziare la carriera.</div>' +
+        '<div class="noc-hero-row">' +
+          '<button type="button" class="noc-btn noc-btn-primary" id="noc-empty-crea">Crea Squadra</button>' +
+          '<button type="button" class="noc-btn noc-btn-secondary" id="noc-empty-campionato">Scegli Campionato</button>' +
+        '</div>' +
+        '<div style="margin-top:14px;"><a href="#" id="noc-other-modes" style="font-size:10.5px;color:#75798c;text-decoration:underline;">Altre modalità (Il Mio Giocatore, Road to Glory)</a></div>' +
+      '</div>';
+    host.querySelector('#noc-empty-crea').addEventListener('click', nocStartWizard);
+    host.querySelector('#noc-empty-campionato').addEventListener('click', nocStartWizard);
+    host.querySelector('#noc-other-modes').addEventListener('click', function(ev){
+      ev.preventDefault();
+      const hubScreen = document.getElementById('hub-screen');
+      if(hubScreen) hubScreen.classList.add('hidden');
+      const modeRoot = document.getElementById('mode-root-screen');
+      const leagueScreen = document.getElementById('league-select-screen');
+      if(leagueScreen) leagueScreen.classList.remove('hidden');
+      if(modeRoot) modeRoot.classList.add('hidden');
+    });
+    return;
+  }
+  if(nocWizardStep === 'league') return nocRenderWizardLeague(host);
+  if(nocWizardStep === 'girone') return nocRenderWizardGirone(host);
+  if(nocWizardStep === 'team') return nocRenderWizardTeam(host);
+  if(nocWizardStep === 'formation') return nocRenderWizardFormation(host);
+  if(nocWizardStep === 'review') return nocRenderWizardReview(host);
+}
+
+function nocWizardCard(kicker, title, sub, innerHtml){
+  return (
+    '<div class="noc-hero">' +
+      '<div class="noc-hero-kicker">' + kicker + '</div>' +
+      '<div class="noc-hero-title" style="font-size:19px;">' + title + '</div>' +
+      (sub ? '<div class="noc-hero-sub">' + sub + '</div>' : '') +
+      '<div style="margin-top:14px;">' + innerHtml + '</div>' +
+    '</div>'
+  );
+}
+
+/* Step 1: Serie A2 / Serie B. Calls the game's real setActiveLeague(),
+   same as the old league-a2/league-b buttons did — just new markup. */
+function nocRenderWizardLeague(host){
+  host.innerHTML = nocWizardCard('FASE PRELIMINARE · 1/4', 'Che campionato vuoi giocare?', '',
+    '<div style="display:flex;flex-direction:column;gap:8.4px;">' +
+      '<button type="button" class="noc-btn noc-btn-secondary noc-btn-full" id="noc-wiz-a2" style="justify-content:flex-start;">Serie A2 — 19 club reali</button>' +
+      '<button type="button" class="noc-btn noc-btn-secondary noc-btn-full" id="noc-wiz-b" style="justify-content:flex-start;">Serie B Nazionale — a gironi</button>' +
+    '</div>'
+  );
+  host.querySelector('#noc-wiz-a2').addEventListener('click', function(){
+    setActiveLeague('A2', null);
+    nocWizardStep = 'team';
+    nocRenderWizard();
+  });
+  host.querySelector('#noc-wiz-b').addEventListener('click', function(){
+    nocWizardStep = 'girone';
+    nocRenderWizard();
+  });
+}
+
+function nocRenderWizardGirone(host){
+  host.innerHTML = nocWizardCard('FASE PRELIMINARE · 1/4', 'Quale girone?', '',
+    '<div style="display:flex;flex-direction:column;gap:8.4px;">' +
+      '<button type="button" class="noc-btn noc-btn-secondary noc-btn-full" id="noc-wiz-girone-a">Girone A</button>' +
+      '<button type="button" class="noc-btn noc-btn-secondary noc-btn-full" id="noc-wiz-girone-b">Girone B</button>' +
+      '<button type="button" class="noc-btn noc-btn-ghost" id="noc-wiz-back-league" style="margin-top:4px;">&larr; Indietro</button>' +
+    '</div>'
+  );
+  host.querySelector('#noc-wiz-girone-a').addEventListener('click', function(){
+    setActiveLeague('B', 'A'); nocWizardStep = 'team'; nocRenderWizard();
+  });
+  host.querySelector('#noc-wiz-girone-b').addEventListener('click', function(){
+    setActiveLeague('B', 'B'); nocWizardStep = 'team'; nocRenderWizard();
+  });
+  host.querySelector('#noc-wiz-back-league').addEventListener('click', function(){
+    nocWizardStep = 'league'; nocRenderWizard();
+  });
+}
+
+/* Step 2: team name + city. Mirrors renderFictionalTeamScreen()'s fields
+   1:1 (name/city), but rather than duplicate the confirm handler's logic
+   (name/city -> teamName/chosenClub, plus the "pending talent" prospect
+   bonus from a shop reward) this fills the SAME real, still-present
+   #fictional-name-input/#fictional-city-select and programmatically clicks
+   the SAME real #btn-confirm-fictional-team — reusing that logic exactly,
+   with zero risk of it drifting out of sync. fictional-team-screen itself
+   is never shown; only its inputs are touched, headlessly. */
+function nocRenderWizardTeam(host){
+  const cityOptions = FICTIONAL_CITIES.map(function(c){ return '<option value="' + c + '">' + c + '</option>'; }).join('');
+  host.innerHTML = nocWizardCard('FASE PRELIMINARE · 2/4', 'Crea la tua squadra',
+    'Nomi e città sono inventati: nessuna analogia con squadre reali.',
+    '<div class="field" style="margin-bottom:8.4px;"><label style="font-size:11px;color:#9397ab;display:block;margin-bottom:4px;">Nome della squadra</label>' +
+      '<input type="text" id="noc-wiz-name" class="noc-input" placeholder="Es. Basket Lucca"></div>' +
+    '<div class="field" style="margin-bottom:11.2px;"><label style="font-size:11px;color:#9397ab;display:block;margin-bottom:4px;">Città</label>' +
+      '<select id="noc-wiz-city" class="noc-input">' + cityOptions + '</select></div>' +
+    '<button type="button" class="noc-btn noc-btn-primary noc-btn-full" id="noc-wiz-confirm-team" disabled>Conferma Squadra</button>' +
+    '<button type="button" class="noc-btn noc-btn-ghost" id="noc-wiz-back-team" style="margin-top:8px;">&larr; Indietro</button>'
+  );
+  const nameInput = host.querySelector('#noc-wiz-name');
+  const confirmBtn = host.querySelector('#noc-wiz-confirm-team');
+  nameInput.addEventListener('input', function(){
+    confirmBtn.disabled = nameInput.value.trim().length === 0;
+  });
+  confirmBtn.addEventListener('click', function(){
+    if(nameInput.value.trim().length === 0) return;
+    const realName = document.getElementById('fictional-name-input');
+    const realCity = document.getElementById('fictional-city-select');
+    const realConfirm = document.getElementById('btn-confirm-fictional-team');
+    if(!realCity.options.length) realCity.innerHTML = cityOptions;
+    realName.value = nameInput.value;
+    realCity.value = host.querySelector('#noc-wiz-city').value;
+    realConfirm.click(); // runs the real confirm logic (teamName/chosenClub/pending-talent bonus)
+    document.getElementById('draft-screen').classList.add('hidden'); // that handler unhides the old unstyled formation-picker screen as a side effect; the noc wizard renders its own styled step 3 instead, so hide it right back
+    nocWizardStep = 'formation';
+    nocRenderWizard();
+  });
+  host.querySelector('#noc-wiz-back-team').addEventListener('click', function(){
+    nocWizardStep = (state.league === 'B') ? 'girone' : 'league';
+    nocRenderWizard();
+  });
+}
+
+/* Step 3: formation/module. Sets state.formation exactly like the old
+   renderFormationPicker()'s cards did, then calls the REAL renderDraftRound()
+   unchanged — the 8 draft rounds run entirely inside the existing
+   Nocturne pack-opening overlay (already rebuilt, z-index 60, covers the
+   whole screen), so draft-screen underneath never needs to be shown. */
+function nocRenderWizardFormation(host){
+  const cards = FORMATIONS.map(function(f){
+    return (
+      '<button type="button" class="noc-btn noc-btn-secondary noc-btn-full noc-wiz-formation-btn" data-fid="' + f.id + '" style="flex-direction:column;align-items:flex-start;min-height:auto;padding:11.2px;gap:2px;">' +
+        '<span style="font-weight:600;font-size:13px;">' + f.title + '</span>' +
+        '<span style="font-size:10.5px;color:#75798c;font-weight:400;">' + f.desc + '</span>' +
+      '</button>'
+    );
+  }).join('<div style="height:8px;"></div>');
+  host.innerHTML = nocWizardCard('FASE PRELIMINARE · 3/4', state.teamName + ' — Scegli il modulo', '',
+    '<div style="display:flex;flex-direction:column;">' + cards + '</div>'
+  );
+  host.querySelectorAll('.noc-wiz-formation-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      const f = FORMATIONS.find(function(x){ return x.id === btn.dataset.fid; });
+      if(!f) return;
+      state.formation = f.roles;
+      state.draftStep = 0;
+      renderDraftRound(); // opens the real Nocturne draft-pack overlay, round by round
+    });
+  });
+}
+
+/* Step 4: roster review, before startSeason(). Reuses the real renderRoster()
+   (same tap-to-swap logic as the live Rosa tab) targeted at a fresh
+   Nocturne-scoped container — restyled via the CSS block below, same
+   technique already used for #noc-panel-rosa, not the old career-roster-
+   review-screen markup. */
+function nocRenderWizardReview(host){
+  host.innerHTML = nocWizardCard('FASE PRELIMINARE · 4/4', 'Rifinisci la formazione',
+    'Tocca la stella per rendere titolare/riserva un giocatore dello stesso ruolo.',
+    '<div id="noc-wiz-roster-message" class="roster-message"></div>' +
+    '<div id="noc-wiz-roster-box"></div>' +
+    '<button type="button" class="noc-btn noc-btn-primary noc-btn-full" id="noc-wiz-start-season" style="margin-top:11.2px;">Inizia la Stagione</button>'
+  );
+  setRosterTarget('noc-wiz-roster-box', 'noc-wiz-roster-message');
+  renderRoster();
+  host.querySelector('#noc-wiz-start-season').addEventListener('click', function(){
+    startSeason();
+    nocWizardStep = null; // reset for the next time a team is created
+  });
+}
+
+/* pickPlayer()'s last round calls this exactly as before — only its body
+   changed, from showing career-roster-review-screen to showing our step. */
+function showCareerRosterReview(){
+  nocWizardStep = 'review';
+  nocRenderWizard();
+}
+
+function nocEnsureShell(){
+  if(document.getElementById('noc-shell')) return;
+  const hubScreen = document.getElementById('hub-screen');
+  if(!hubScreen) return;
+
+  const rosterMessage = document.getElementById('roster-message');
+  const rosterBox = document.getElementById('roster-box');
+
+  // Hide (never remove) the legacy chrome — Coppa Italia/MyPlayer/RTG never
+  // reference these nodes, this only affects how the Career hub looks.
+  // #week-strip/#run-feed-title/#match-feed are NOT relocated anymore (that
+  // was old-game markup bleeding into the new screen) — they stay in place,
+  // hidden via CSS (`#week-strip,#run-feed-title,#match-feed{display:none}`),
+  // so the game's own renderStrip()/renderMatchFeed() keep running harmlessly
+  // in the background while the visible Stagione tab is 100% fresh Nocturne
+  // markup built by nocRenderMatchTab() below, from the same real state.
+  const legacyHeader = document.getElementById('hub-main-header');
+  if(legacyHeader) legacyHeader.classList.add('hidden');
+  const topPopupRow = hubScreen.querySelector('.top-popup-row');
+  if(topPopupRow) topPopupRow.classList.add('hidden');
+  const summaryRow = hubScreen.querySelector('.summary-panel-row');
+  if(summaryRow) summaryRow.classList.add('hidden');
+  const hubTabs = document.getElementById('hub-tabs');
+  if(hubTabs) hubTabs.classList.add('hidden');
+  const mainGrid = hubScreen.querySelector('.main-grid');
+  if(mainGrid) mainGrid.classList.add('hidden');
+
+  const shell = document.createElement('div');
+  shell.className = 'noc-scope noc-outer';
+  shell.id = 'noc-shell';
+  shell.innerHTML =
+    '<div class="noc-app">' +
+      '<div class="noc-header">' +
+        '<div class="noc-logo"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#b5abfc" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18"/><path d="M3 12h18"/><path d="M5.5 5.5c3 3 3 10 0 13"/><path d="M18.5 5.5c-3 3 -3 10 0 13"/></svg></div>' +
+        '<div class="noc-club-id">' +
+          '<div class="noc-club-name" id="noc-club-name">Club</div>' +
+          '<div class="noc-club-sub">SERIE A2 · 25-26</div>' +
+        '</div>' +
+        '<div class="noc-credits-pill"><span>&#9679;</span><span id="noc-credits-val">0</span></div>' +
+      '</div>' +
+      '<div class="noc-main" id="noc-main"></div>' +
+      '<div class="noc-nav" id="noc-nav"></div>' +
+    '</div>';
+  hubScreen.appendChild(shell);
+
+  const nav = shell.querySelector('#noc-nav');
+  NOC_TABS.forEach(function(t){
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'noc-nav-btn';
+    btn.dataset.tab = t.id;
+    btn.innerHTML = '<span class="noc-nav-pip"></span><span>'+t.label+'</span>';
+    btn.addEventListener('click', function(){ nocActiveTab = t.id; nocRefreshShell(); });
+    nav.appendChild(btn);
+  });
+
+  const main = shell.querySelector('#noc-main');
+  const panels = {};
+  NOC_TABS.forEach(function(t){
+    const p = document.createElement('div');
+    p.className = 'noc-tab-panel noc-hidden';
+    p.id = 'noc-panel-'+t.id;
+    main.appendChild(p);
+    panels[t.id] = p;
+  });
+  nocPanels = panels;
+
+  /* ---- CLUB ---- */
+  panels.club.innerHTML =
+    '<div id="noc-club-empty"></div>' +
+    '<div id="noc-club-active">' +
+      '<div class="noc-hero">' +
+        '<div class="noc-hero-kicker">SALA TROFEI</div>' +
+        '<div class="noc-hero-title">La stagione ti aspetta</div>' +
+        '<div class="noc-hero-sub" id="noc-hero-sub">Rosa da 8: 5 in campo, 3 dalla panchina.</div>' +
+        '<div class="noc-hero-row">' +
+          '<button type="button" class="noc-btn noc-btn-primary" id="noc-hero-play">Riprendi la stagione</button>' +
+          '<button type="button" class="noc-btn noc-btn-secondary" id="noc-hero-shop">Shop</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="noc-stats3">' +
+        '<div class="noc-stat-cell"><div class="noc-stat-value" id="noc-stat-carte">0</div><div class="noc-stat-label">Carte</div></div>' +
+        '<div class="noc-stat-cell"><div class="noc-stat-value" id="noc-stat-rating">0</div><div class="noc-stat-label">Rating</div></div>' +
+        '<div class="noc-stat-cell"><div class="noc-stat-value accent" id="noc-stat-crm">0</div><div class="noc-stat-label">CRM Lega</div></div>' +
+      '</div>' +
+      '<div>' +
+        '<div class="noc-section-head"><div class="noc-section-title">Obiettivi Lega</div><div class="noc-section-count" id="noc-obj-count">0/4</div></div>' +
+        '<div id="noc-obj-list"></div>' +
+      '</div>' +
+      '<div style="margin-top:16.8px;">' +
+        '<button type="button" class="noc-btn noc-btn-danger noc-btn-full" id="noc-reset-run">Resetta Run</button>' +
+        '<div class="noc-hero-sub" style="max-width:none;margin-top:8px;">Ricomincia dal Draft con un nuovo club: monete e obiettivi restano invariati.</div>' +
+      '</div>' +
+    '</div>';
+  nocRenderWizard();
+  panels.club.querySelector('#noc-hero-play').addEventListener('click', function(){ nocActiveTab='stagione'; nocRefreshShell(); });
+  panels.club.querySelector('#noc-hero-shop').addEventListener('click', function(){ nocActiveTab='shop'; nocRefreshShell(); });
+  panels.club.querySelector('#noc-reset-run').addEventListener('click', function(){ if(typeof nocResetRun==='function') nocResetRun(); });
+
+  /* ---- ROSA ---- */
+  const rosaHead = document.createElement('div');
+  rosaHead.innerHTML =
+    '<div class="noc-screen-title">Assembla la squadra</div>' +
+    '<div class="noc-screen-sub">Tocca la stella per rendere titolare/riserva un giocatore dello stesso ruolo, oppure trascina un giocatore su un altro per scambiarli.</div>';
+  panels.rosa.appendChild(rosaHead);
+  const tacticCell = document.createElement('div');
+  tacticCell.className = 'noc-stat-cell';
+  tacticCell.style.marginTop = '11.2px';
+  const tacticLabel = document.createElement('div');
+  tacticLabel.className = 'noc-stat-label';
+  tacticLabel.textContent = 'TATTICA ATTUALE';
+  nocRosterTacticLine = document.createElement('div');
+  nocRosterTacticLine.className = 'noc-stat-value';
+  nocRosterTacticLine.style.fontSize = '14px';
+  const tacticBtn = document.createElement('button');
+  tacticBtn.type = 'button';
+  tacticBtn.className = 'noc-btn noc-btn-secondary noc-btn-full';
+  tacticBtn.style.marginTop = '8px';
+  tacticBtn.textContent = 'Cambia tattica';
+  tacticBtn.addEventListener('click', function(){ if(typeof openTacticPicker==='function') openTacticPicker(); });
+  tacticCell.appendChild(tacticLabel);
+  tacticCell.appendChild(nocRosterTacticLine);
+  tacticCell.appendChild(tacticBtn);
+  panels.rosa.appendChild(tacticCell);
+  if(rosterMessage) panels.rosa.appendChild(rosterMessage);
+  if(rosterBox) panels.rosa.appendChild(rosterBox);
+
+  /* ---- STAGIONE ---- */
+  panels.stagione.innerHTML =
+    '<div class="noc-season-head">' +
+      '<div><div class="noc-kicker">GIORNATA</div><div class="noc-giornata-val" id="noc-giornata-val">1 / 38</div></div>' +
+      '<div><div class="noc-kicker" style="text-align:right;">RECORD</div><div class="noc-record-val" id="noc-record-val">0-0</div></div>' +
+    '</div>' +
+    '<div class="noc-progress-track"><div class="noc-progress-fill" id="noc-season-progress" style="width:0%;"></div></div>' +
+    '<div class="noc-segmented" id="noc-stagione-seg">' +
+      '<button type="button" class="noc-seg-btn" data-sub="partite"><span class="noc-seg-main">Partite</span></button>' +
+      '<button type="button" class="noc-seg-btn" data-sub="classifica"><span class="noc-seg-main">Classifica</span></button>' +
+    '</div>' +
+    '<div class="noc-stagione-sub" id="noc-sub-partite">' +
+      '<div class="noc-match-card" id="noc-match-card"></div>' +
+      '<div class="noc-match-controls" id="noc-match-controls" style="margin-top:11.2px;"></div>' +
+      '<div class="noc-results-label" style="margin-top:16.8px;">ULTIMI RISULTATI</div>' +
+      '<div id="noc-results-list"></div>' +
+    '</div>' +
+    '<div class="noc-stagione-sub noc-hidden" id="noc-sub-classifica"><div class="noc-standings" id="noc-standings-table"></div></div>';
+  panels.stagione.querySelectorAll('#noc-stagione-seg .noc-seg-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){ nocStagioneSub = btn.dataset.sub; nocRefreshShell(); });
+  });
+
+  /* ---- SHOP ---- */
+  const shopWrap = document.createElement('div');
+  shopWrap.id = 'noc-shop-wrap';
+  panels.shop.appendChild(shopWrap);
+
+  /* ---- ALBUM ---- */
+  panels.album.innerHTML =
+    '<div class="noc-screen-title">Album Lega</div>' +
+    '<div class="noc-screen-sub" id="noc-album-sub"></div>' +
+    '<div class="noc-album-grid" id="noc-album-grid" style="margin-top:11.2px;"></div>';
+}
+
+function nocRarityClassForOvr(ovr){
+  const tier = typeof draftRarityTier === 'function' ? draftRarityTier(ovr) : 'common';
+  return NOC_RARITY_CLASS[tier] || 'noc-rar-common';
+}
+
+function nocRenderObjectives(){
+  const list = document.getElementById('noc-obj-list');
+  const count = document.getElementById('noc-obj-count');
+  if(!list) return;
+  const hof = (typeof loadHallOfFame === 'function') ? loadHallOfFame() : [];
+  const objs = [
+    { title:'Apri 8 pacchetti', val: Math.min(state.packsOpened||0, 8), target:8, reward:50 },
+    { title:'Assembla una rosa da 8', val: Math.min((state.roster||[]).length, 8), target:8, reward:100 },
+    { title:'Vinci 15 partite', val: Math.min(state.record.w, 15), target:15, reward:200 },
+    { title:'Completa una stagione', val: hof.length>0?1:0, target:1, reward:150 }
+  ];
+  const doneCount = objs.filter(function(o){ return o.val>=o.target; }).length;
+  count.textContent = doneCount+'/'+objs.length;
+  list.innerHTML = objs.map(function(o){
+    const done = o.val>=o.target;
+    const pct = Math.round((o.val/o.target)*100);
+    return (
+      '<div class="noc-obj-row">' +
+        '<div class="noc-obj-badge'+(done?' done':'')+'">'+(done?'&#10003;':o.title.charAt(0))+'</div>' +
+        '<div class="noc-obj-body">' +
+          '<div class="noc-obj-title">'+o.title+'</div>' +
+          '<div class="noc-obj-track"><div class="noc-obj-fill" style="width:'+pct+'%;"></div></div>' +
+        '</div>' +
+        '<div class="noc-obj-right">' +
+          '<span class="noc-obj-progress">'+o.val+'/'+o.target+'</span>' +
+          '<span class="noc-obj-reward">+'+o.reward+'</span>' +
+        '</div>' +
+      '</div>'
+    );
+  }).join('');
+}
+
+function nocStandingsRows(){
+  const rows = [].concat(state.standings||[], [{ name:state.teamName, w:state.record.w, l:state.record.l, isMe:true }]);
+  rows.sort(function(a,b){ return b.w-a.w || a.l-b.l; });
+  return rows;
+}
+
+function nocMyStandingsPosition(){
+  const rows = nocStandingsRows();
+  return { pos: rows.findIndex(function(r){ return r.isMe; }) + 1, total: rows.length };
+}
+
+function nocRenderStandingsTable(){
+  const box = document.getElementById('noc-standings-table');
+  if(!box) return;
+  const rows = nocStandingsRows();
+  const playoffLine = rows.length >= 20 ? 8 : 8;
+  box.innerHTML =
+    '<div class="noc-standings-head"><span>#</span><span>SQUADRA</span><span>V</span><span>S</span><span>PT</span></div>' +
+    rows.map(function(r,i){
+      const pos = i+1;
+      return (
+        '<div class="noc-standings-row'+(r.isMe?' me':'')+'">' +
+          '<span class="noc-pos'+(pos<=playoffLine?' playoff':'')+'">'+pos+'</span>' +
+          '<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+r.name+'</span>' +
+          '<span>'+r.w+'</span><span>'+r.l+'</span><span>'+(r.w*2+ (r.l*0))+'</span>' +
+        '</div>'
+      );
+    }).join('');
+}
+
+/* Fresh Nocturne markup for the "Partite" sub-tab — replaces the old
+   #week-strip/#match-feed relocation. Reads the SAME real state the old
+   renderStrip()/renderMatchFeed() used (state.opponent, state.postSeason,
+   state.matchFeed, state.autoPlay) and wires the same real actions
+   (openMatch(), toggleAutoPlay()) — only the markup/CSS is new.
+   Deliberate simplification vs the handoff: no "Casa" tag (this game
+   doesn't track home/away for the user's matches) and no per-match
+   telecronaca line (the hub always shows the UPCOMING match — once a game
+   resolves, state.week/state.opponent advance immediately, there's no
+   "just finished" hub state to caption); the box-score-detail expand that
+   the old feed rows had is dropped here rather than re-skinned with old
+   markup — can be rebuilt in fresh Nocturne style later if wanted. */
+function nocRenderMatchTab(){
+  const cardBox = document.getElementById('noc-match-card');
+  const controlsBox = document.getElementById('noc-match-controls');
+  const resultsList = document.getElementById('noc-results-list');
+  if(!cardBox) return;
+
+  const feed = state.matchFeed || [];
+  const inPostSeason = !!(state.postSeason && state.postSeason.active);
+
+  if(inPostSeason){
+    cardBox.innerHTML =
+      '<div class="noc-match-kicker">' + (state.postSeason.stageLabel || 'Post-Stagione') + '</div>' +
+      '<div class="noc-match-row">' +
+        '<div class="noc-match-team">' + state.teamName + '</div>' +
+        '<div class="noc-match-score" style="font-size:18px;">vs</div>' +
+        '<div class="noc-match-team" style="text-align:right;">' + (state.opponent ? state.opponent.name : '') + '</div>' +
+      '</div>';
+    controlsBox.innerHTML = '<div class="noc-match-line" style="color:#75798c;">Prosegui dalla finestra di risultato.</div>';
+  } else if(state.opponent){
+    cardBox.innerHTML =
+      '<div class="noc-match-kicker">PROSSIMO IMPEGNO</div>' +
+      '<div class="noc-match-row">' +
+        '<div class="noc-match-team">' + state.teamName + '</div>' +
+        '<div class="noc-match-score" style="font-size:18px;">vs</div>' +
+        '<div class="noc-match-team" style="text-align:right;">' + state.opponent.name + '</div>' +
+      '</div>';
+    controlsBox.innerHTML =
+      '<button type="button" class="noc-btn noc-btn-primary" id="noc-btn-gioca">Gioca</button>' +
+      '<button type="button" class="noc-btn noc-btn-secondary" id="noc-btn-auto">' + (state.autoPlay ? 'Pausa' : 'Auto') + '</button>';
+    const giocaBtn = controlsBox.querySelector('#noc-btn-gioca');
+    if(giocaBtn) giocaBtn.addEventListener('click', function(){ nocPlayMatchInstant(); });
+    const autoBtn = controlsBox.querySelector('#noc-btn-auto');
+    if(autoBtn) autoBtn.addEventListener('click', function(){ toggleAutoPlay(); });
+  } else {
+    cardBox.innerHTML = '<div class="noc-match-kicker">STAGIONE NON ANCORA INIZIATA</div>';
+    controlsBox.innerHTML = '';
+  }
+
+  if(!resultsList) return;
+  if(!feed.length){
+    resultsList.innerHTML = '<div class="noc-eos-summary">Nessuna partita giocata finora.</div>';
+    return;
+  }
+  resultsList.innerHTML = feed.slice(-6).reverse().map(function(e){
+    return (
+      '<div>' +
+        '<div class="noc-result-row" data-feed-id="' + e.id + '" style="cursor:pointer;">' +
+          '<div class="noc-result-badge' + (e.won ? ' win' : '') + '">' + (e.won ? 'V' : 'S') + '</div>' +
+          '<div class="noc-result-teams">vs ' + e.opponent + '</div>' +
+          '<div class="noc-result-score">' + e.scoreYou + '&ndash;' + e.scoreOpp + '</div>' +
+          '<div class="noc-result-gg">' + (e.stageLabel || '').replace('Giornata ', 'G') + '</div>' +
+        '</div>' +
+        (e.expanded ? '<div class="noc-boxscore-wrap">' + nocBoxTableHtml(e) + '</div>' : '') +
+      '</div>'
+    );
+  }).join('');
+  resultsList.querySelectorAll('.noc-result-row').forEach(function(row){
+    row.addEventListener('click', function(){
+      const id = Number(row.dataset.feedId);
+      const entry = feed.find(function(x){ return x.id === id; });
+      if(entry) entry.expanded = !entry.expanded;
+      nocRenderMatchTab();
+    });
+  });
+}
+
+/* Instant match resolution — no pre-match choice modal, no animated live
+   viewer. Reuses the real simulation engine 1:1 (startLiveMatch() builds the
+   match and its box score, skipLiveMatch() fast-forwards through every
+   possession synchronously): since we never show the overlay/modal these
+   write into, the live screen is built and torn down without ever becoming
+   visible. finishLiveMatch() already skips any result modal for a normal
+   season match (appendMatchToFeed + close + render + advance the week) —
+   that behavior was already there, this just removes the "Vedi Risultato /
+   Guarda Live" choice in front of it. */
+function nocPlayMatchInstant(){
+  if(!state.opponent) return;
+  if(state.postSeason && state.postSeason.active) return;
+  startLiveMatch();
+  skipLiveMatch();
+}
+
+/* Fresh Nocturne box-score table, built from the SAME per-match data
+   appendMatchToFeed() already stores on each feed entry (myBox/oppBox/
+   myOrder/oppOrder/benchStartIndex) — no reuse of the old boxTableHtml()
+   markup/CSS, this is new Nocturne-styled output. */
+function nocBoxTableRows(order, box, benchStartIndex){
+  return order.map(function(cognome, i){
+    const d = box[cognome] || {};
+    const divider = (benchStartIndex != null && i === benchStartIndex)
+      ? '<div class="noc-box-divider">PANCHINA</div>' : '';
+    return divider +
+      '<div class="noc-box-row">' +
+        '<span class="noc-box-role">' + (d.role || '-') + '</span>' +
+        '<span class="noc-box-name">' + cognome + '</span>' +
+        '<span>' + (d.pts||0) + '</span>' +
+        '<span>' + (d.mk2||0) + '/' + (d.att2||0) + '</span>' +
+        '<span>' + (d.mk3||0) + '/' + (d.att3||0) + '</span>' +
+        '<span>' + (d.reb||0) + '</span>' +
+        '<span>' + (d.ast||0) + '</span>' +
+        '<span>' + (d.stl||0) + '</span>' +
+      '</div>';
+  }).join('');
+}
+function nocBoxTableHtml(e){
+  if(!e.myBox || !e.oppBox) return '';
+  return (
+    '<div class="noc-box-table">' +
+      '<div class="noc-box-title">' + state.teamName + '</div>' +
+      '<div class="noc-box-head"><span>RL</span><span>Giocatore</span><span>PT</span><span>2PT</span><span>3PT</span><span>RB</span><span>AS</span><span>PR</span></div>' +
+      nocBoxTableRows(e.myOrder||[], e.myBox, e.benchStartIndex) +
+    '</div>' +
+    '<div class="noc-box-table" style="margin-top:8px;">' +
+      '<div class="noc-box-title">' + e.opponent + '</div>' +
+      '<div class="noc-box-head"><span>RL</span><span>Giocatore</span><span>PT</span><span>2PT</span><span>3PT</span><span>RB</span><span>AS</span><span>PR</span></div>' +
+      nocBoxTableRows(e.oppOrder||[], e.oppBox, e.oppBenchStartIndex) +
+    '</div>'
+  );
+}
+
+function nocRenderAlbum(){
+  const grid = document.getElementById('noc-album-grid');
+  const sub = document.getElementById('noc-album-sub');
+  if(!grid || typeof ALL_PLAYERS === 'undefined') return;
+  const ownedKeys = new Set((state.roster||[]).map(function(p){ return p.nome+'|'+p.cognome; }));
+  sub.textContent = ownedKeys.size + '/' + ALL_PLAYERS.length + ' giocatori tracciati';
+  const pool = ALL_PLAYERS.slice(0, 200); // cap for a snappy grid; ownership check covers the whole pool
+  grid.innerHTML = pool.map(function(p){
+    const key = p.nome+'|'+p.cognome;
+    if(ownedKeys.has(key)){
+      const rarClass = nocRarityClassForOvr(p.ovr);
+      return '<div class="noc-album-cell owned '+rarClass+'"><div class="noc-album-ovr">'+p.ovr+'</div><div class="noc-album-surname">'+p.cognome+'</div></div>';
+    }
+    return '<div class="noc-album-cell locked"><div class="noc-album-ovr">?</div><div class="noc-album-surname">&mdash;&mdash;&mdash;</div></div>';
+  }).join('');
+}
+
+function nocRefreshShell(){
+  if(!document.getElementById('noc-shell')) return;
+  if(state.myPlayerCognome) return; // MyPlayer keeps its own original screen, untouched
+
+  const hasClub = state.phase === 'hub'; // no team created yet -> empty-hub onboarding state
+
+  // header
+  const clubNameEl = document.getElementById('noc-club-name');
+  if(clubNameEl) clubNameEl.textContent = hasClub ? (state.teamName || state.chosenClub || 'Club') : 'Nuovo Club';
+  const creditsEl = document.getElementById('noc-credits-val');
+  if(creditsEl) creditsEl.textContent = (typeof profile !== 'undefined' ? profile.coins : 0).toLocaleString('it-IT');
+
+  // nav active state — locked to Club until a team exists, since Rosa/
+  // Stagione/Shop/Album have nothing to show yet
+  if(!hasClub) nocActiveTab = 'club';
+  document.querySelectorAll('#noc-nav .noc-nav-btn').forEach(function(btn){
+    btn.classList.toggle('active', btn.dataset.tab === nocActiveTab);
+    btn.disabled = !hasClub && btn.dataset.tab !== 'club';
+  });
+  Object.keys(nocPanels||{}).forEach(function(id){
+    nocPanels[id].classList.toggle('noc-hidden', id !== nocActiveTab);
+  });
+
+  // club tab: empty (no team yet) vs active (real hub) state
+  const clubEmpty = document.getElementById('noc-club-empty');
+  const clubActive = document.getElementById('noc-club-active');
+  if(clubEmpty) clubEmpty.classList.toggle('noc-hidden', hasClub);
+  if(clubActive) clubActive.classList.toggle('noc-hidden', !hasClub);
+  if(!hasClub) return; // nothing else to refresh until a team exists
+
+  const heroSub = document.getElementById('noc-hero-sub');
+  if(heroSub) heroSub.textContent = 'Rosa da '+(state.roster||[]).length+': 5 in campo, 3 dalla panchina. '+(state.schedule.length||38)+' giornate, poi i crediti.';
+  const heroPlayBtn = document.getElementById('noc-hero-play');
+  if(heroPlayBtn) heroPlayBtn.textContent = (state.matchFeed && state.matchFeed.length) ? 'Riprendi la stagione' : 'Inizia la stagione';
+  const statCarte = document.getElementById('noc-stat-carte');
+  if(statCarte) statCarte.textContent = (state.roster||[]).length;
+  const statRating = document.getElementById('noc-stat-rating');
+  if(statRating && state.roster && state.roster.length) statRating.textContent = Math.round(avgOvr(state));
+  const statCrm = document.getElementById('noc-stat-crm');
+  if(statCrm) statCrm.textContent = (typeof profile !== 'undefined' ? profile.coins : 0);
+  nocRenderObjectives();
+
+  // rosa tab
+  if(nocRosterTacticLine){
+    const t = (typeof TACTICS !== 'undefined') ? TACTICS.find(function(x){ return x.id===state.tactic; }) : null;
+    nocRosterTacticLine.textContent = t ? t.title : 'Equilibrato';
+  }
+
+  // stagione tab
+  const giornataEl = document.getElementById('noc-giornata-val');
+  if(giornataEl) giornataEl.textContent = state.week + ' / ' + (state.schedule.length||38);
+  const recordEl = document.getElementById('noc-record-val');
+  if(recordEl && state.standings){
+    const myPos = nocMyStandingsPosition();
+    recordEl.innerHTML = state.record.w+'-'+state.record.l+' &middot; <b>'+myPos.pos+'&deg;</b>';
+  } else if(recordEl){
+    recordEl.innerHTML = state.record.w+'-'+state.record.l;
+  }
+  const progressEl = document.getElementById('noc-season-progress');
+  if(progressEl) progressEl.style.width = Math.min(100, Math.round((state.week/(state.schedule.length||38))*100)) + '%';
+  {
+    document.querySelectorAll('#noc-stagione-seg .noc-seg-btn').forEach(function(btn){
+      btn.classList.toggle('active', btn.dataset.sub === nocStagioneSub);
+    });
+    const subPartite = document.getElementById('noc-sub-partite');
+    const subClassifica = document.getElementById('noc-sub-classifica');
+    if(subPartite) subPartite.classList.toggle('noc-hidden', nocStagioneSub!=='partite');
+    if(subClassifica) subClassifica.classList.toggle('noc-hidden', nocStagioneSub!=='classifica');
+  }
+  nocRenderMatchTab();
+  if(nocStagioneSub==='classifica') nocRenderStandingsTable();
+
+  // shop tab (reuse the real shop renderer, just targeting our own container)
+  if(nocActiveTab==='shop'){
+    const shopWrap = document.getElementById('noc-shop-wrap');
+    if(shopWrap && typeof renderShopScreen==='function') renderShopScreen(shopWrap);
+  }
+
+  // album tab
+  if(nocActiveTab==='album') nocRenderAlbum();
 }
 
 function renderMyPlayerPersonalPanel(){
@@ -4928,7 +5805,7 @@ function renderMyPlayerPersonalPanel(){
   if(!panel) return;
   const isMyPlayer = !!state.myPlayerCognome;
 
-  ['hub-main-header','week-strip','hub-tabs','hub-pane-roster','hub-secondary-col'].forEach(id=>{
+  ['hub-main-header','week-strip','hub-tabs','hub-pane-roster','hub-secondary-col','noc-shell'].forEach(id=>{
     const el = document.getElementById(id);
     if(el) el.classList.toggle('hidden', isMyPlayer);
   });
@@ -7113,6 +7990,29 @@ function hasSave(){
   try{ return !!localStorage.getItem(SAVE_KEY); } catch(e){ return false; }
 }
 
+/* Resetta Run (scheda Club): torna al Draft per scegliere un nuovo club,
+   cancellando solo il salvataggio della run corrente (SAVE_KEY). Monete/
+   sblocchi (PROFILE_KEY) e albo d'oro (HOF_KEY) non vengono toccati, quindi
+   restano invariati come nel flusso "Nuova Stagione (Nuovo Draft)" di fine
+   stagione. */
+function nocResetRun(){
+  const modal = document.getElementById('modal-content');
+  modal.classList.remove('wide'); modal.classList.remove('live-match');
+  modal.innerHTML = `
+    <div class="m-eyebrow">Resetta Run</div>
+    <h3>Ricominciare dal Draft?</h3>
+    <p>La stagione in corso (rosa, calendario, classifica) verrà cancellata e tornerai alla scelta del club. Monete e obiettivi restano invariati.</p>
+    <button class="modal-btn" id="btn-reset-run-confirm" style="margin-bottom:8px;">Sì, ricomincia dal Draft</button>
+    <button class="modal-btn secondary" id="btn-reset-run-cancel">Annulla</button>
+  `;
+  document.getElementById('btn-reset-run-confirm').addEventListener('click', ()=>{
+    try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+    location.reload();
+  });
+  document.getElementById('btn-reset-run-cancel').addEventListener('click', closeModal);
+  document.getElementById('overlay').classList.add('show');
+}
+
 function manualLoadGame(){
   if(!hasSave()){
     alert("Nessun salvataggio trovato. Inizia una nuova partita per crearne uno.");
@@ -7260,24 +8160,13 @@ function renderRtgDraftRound(){
   const pool = eligibleDraftModePool(role);
   const grid = document.getElementById('draft-grid');
   grid.innerHTML='';
-  pool.forEach((p,poolIdx)=>{
-    const isEX = p.naz==='EX';
-    const nazBadge = p.naz ? `<span class="naz-badge ${isEX?'ex':'ita'}">${isEX?'EX':'ITA'}</span>` : '';
-    const card=document.createElement('div');
-    card.className='candidate-card role-accent-'+role;
-    card.innerHTML = `
-      <div class="c-name">${p.cognome}${nazBadge}</div>
-      <div class="c-club">${p.nome} · ${p.club}</div>
-      <div class="stat-grid">
-        <div>PPG <span>${p.ppg}</span></div>
-        <div>APG <span>${p.apg}</span></div>
-        <div>RPG <span>${p.rpg}</span></div>
-        <div>SPG <span>${p.spg}</span></div>
-      </div>
-      <button class="pick-btn">Seleziona</button>
-    `;
-    card.querySelector('.pick-btn').addEventListener('click', ()=> pickRtgDraftCard(role, p, isStarterRound));
-    grid.appendChild(card);
+  const draftPool = pool.map(p=>({ player:p, rarity: draftRarityTier(p.ovr), blocked:false }));
+  openDraftPack({
+    packLabel: isStarterRound ? 'Titolare Pack' : 'Riserva Pack',
+    footer: roleLabel,
+    pool: draftPool
+  }).then(function(picked){
+    pickRtgDraftCard(role, picked.player, isStarterRound);
   });
 }
 
@@ -7403,11 +8292,29 @@ document.getElementById('btn-confirm-fictional-team').addEventListener('click', 
   }
   document.getElementById('fictional-team-screen').classList.add('hidden');
   document.getElementById('draft-screen').classList.remove('hidden');
-  openBoosterPack({ onComplete: renderFormationPicker });
+  renderFormationPicker();
 });
 
 renderClubGrid();
 // Popup automatico di ripresa rimosso: l'utente sceglie ora liberamente con il pulsante "Carica Partita" in home.
+
+/* Hub-first boot: the old "Benvenuto, che campionato vuoi giocare?" gate
+   screen is no longer the landing page — hub-screen is (see the "hidden"
+   class swap on league-select-screen/hub-screen above). If a save exists,
+   resume it straight into the real hub; otherwise render the hub's empty
+   state (Crea Squadra / Scegli Campionato), which hands off to the
+   untouched league->girone->mode->team->draft flow when the user picks
+   one of those two buttons. */
+(function nocBoot(){
+  if(typeof hasSave === 'function' && hasSave() && typeof loadGame === 'function'){
+    if(loadGame() && state.phase === 'hub'){
+      render();
+      return;
+    }
+  }
+  nocEnsureShell();
+  nocRefreshShell();
+})();
 </script>
 </body>
 </html>
