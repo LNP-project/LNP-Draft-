@@ -1528,7 +1528,7 @@ body{
 
 /* rarity tokens reused for slots/bench/album/cards */
 .noc-rar-common{ --rc-top:#2f3242; --rc-bot:#20222e; --rc-edge:#3f424d; --rc-text:#9397ab; --rc-ovr:#cfd3e5; --rc-glow:rgba(117,121,140,.18); }
-.noc-rar-uncommon{ --rc-top:#2f3242; --rc-bot:#20222e; --rc-edge:#3f424d; --rc-text:#9397ab; --rc-ovr:#cfd3e5; --rc-glow:rgba(117,121,140,.18); }
+.noc-rar-uncommon{ --rc-top:#2a3d38; --rc-bot:#1c2b26; --rc-edge:#4d8a72; --rc-text:#9dd6bd; --rc-ovr:#c8f0dd; --rc-glow:rgba(77,138,114,.22); }
 .noc-rar-rare{ --rc-top:#33314d; --rc-bot:#23223a; --rc-edge:#5c5783; --rc-text:#b5afe8; --rc-ovr:#d2cefd; --rc-glow:rgba(121,114,169,.28); }
 .noc-rar-epic{ --rc-top:#3a3560; --rc-bot:#262341; --rc-edge:#796cbf; --rc-text:#d2cefd; --rc-ovr:#e7e5fe; --rc-glow:rgba(145,132,217,.4); }
 .noc-rar-legendary{ --rc-top:#453d7a; --rc-bot:#2b2741; --rc-edge:#b5abfc; --rc-text:#f5f4ff; --rc-ovr:#f5f4ff; --rc-glow:rgba(181,171,252,.55); }
@@ -1562,7 +1562,10 @@ body{
 .noc-match-controls .noc-btn-secondary{ flex:none; }
 
 .noc-results-label{ font:600 9.5px/1 'Inter',sans-serif; text-transform:uppercase; letter-spacing:.1em; color:#75798c; }
-.noc-result-row{ display:flex; align-items:center; gap:8px; padding:9.8px 11.2px; border-radius:8px; background:#232532; margin-top:6px; animation:nocTick .3s ease both; }
+.noc-result-row{ display:flex; align-items:center; gap:8px; padding:9.8px 11.2px; border-radius:8px; background:#232532; margin-top:6px; border-left:3px solid transparent; animation:nocTick .3s ease both; }
+.noc-result-row.no-anim{ animation:none; } /* Auto mode: skip the per-row slide-in so rapid back-to-back results don't "flash" */
+.noc-result-row.result-win{ border-left-color:#2ecc71; }
+.noc-result-row.result-loss{ border-left-color:#ff4d4d; }
 .noc-result-badge{ width:22px; height:22px; border-radius:6px; flex:none; display:flex; align-items:center; justify-content:center; font:600 11px/1 'Inter',sans-serif; background:#292b31; color:#9397ab; }
 .noc-result-badge.win{ background:rgba(145,132,217,.22); color:#d2cefd; }
 .noc-result-teams{ flex:1; font-size:12px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -1584,6 +1587,14 @@ body{
 .noc-standings-row.me{ background:rgba(145,132,217,.12); font-weight:600; color:#e7e5fe; }
 .noc-standings-row .noc-pos{ color:#75798c; }
 .noc-standings-row .noc-pos.playoff{ color:#b5abfc; }
+
+.noc-topplayers-head{ display:grid; grid-template-columns:22px 1fr 84px 42px; gap:8.4px; padding:8.4px 11.2px; background:#232532; }
+.noc-topplayers-head span{ font:600 9.5px/1 'Inter',sans-serif; text-transform:uppercase; color:#75798c; }
+.noc-topplayers-row{ display:grid; grid-template-columns:22px 1fr 84px 42px; gap:8.4px; padding:9.8px 11.2px; background:#1c1e2a; border-top:1px solid rgba(233,233,237,.07); font-size:12px; }
+.noc-topplayers-row.me{ background:rgba(145,132,217,.12); font-weight:600; color:#e7e5fe; }
+.noc-topplayers-row .noc-pos{ color:#75798c; }
+.noc-topplayers-row span:last-child{ color:#b5abfc; font-weight:600; }
+.noc-topplayers-row span:nth-child(3){ color:#75798c; font-size:11px; }
 
 /* ---------- Shop ---------- */
 .noc-pack-card{ position:relative; border-radius:14px; padding:14px; display:flex; gap:11.2px; align-items:center; overflow:hidden; border:1px solid; }
@@ -1856,6 +1867,40 @@ body{
   border-radius:8px; font:600 13px/1 'Inter',sans-serif; text-transform:none; letter-spacing:0; padding:14px;
 }
 .modal.noc-live-result .modal-btn:hover{ filter:none; background:rgba(181,171,252,.2); }
+
+/* Nocturne-styled confirmation dialogs (e.g. Resetta Run) reusing the shared #modal-content/#overlay */
+.modal.noc-confirm{
+  background:#161826; border:1px solid #3f424d; border-radius:14px;
+  font-family:'Inter',sans-serif; color:#e9e9ed;
+}
+
+/* Tactic picker (openTacticPicker) — same TACTICS data/diagram/mod-pill logic, split into
+   Attacco/Difesa sections and restyled to match Nocturne. */
+.modal.noc-tactics{
+  background:#161826; border:1px solid #3f424d; border-radius:14px;
+  font-family:'Inter',sans-serif; color:#e9e9ed;
+}
+.noc-tactics-section-title{
+  font:600 10px/1 'Inter',sans-serif; text-transform:uppercase; letter-spacing:.08em;
+  color:#75798c; margin-bottom:8px;
+}
+.modal.noc-tactics .tactic-card{
+  clip-path:none; background:#1c1e2a; border-top:none; box-shadow:0 0 0 1px #3f424d;
+  border-radius:10px; padding:10px 12px;
+}
+.modal.noc-tactics .tactic-card:hover{ transform:none; box-shadow:0 0 0 1px #9184d9; }
+.modal.noc-tactics .tactic-card.active{ box-shadow:0 0 0 2px #b5abfc; }
+.modal.noc-tactics .tactic-card.locked-tactic{ opacity:.45; }
+.modal.noc-tactics .tactic-card.locked-tactic:hover{ box-shadow:0 0 0 1px #3f424d; }
+.modal.noc-tactics .tc-title{
+  font-family:'Inter',sans-serif; font-weight:600; font-size:12.5px; letter-spacing:0;
+  text-transform:none; color:#e9e9ed; display:flex; align-items:center; gap:6px;
+}
+.modal.noc-tactics .tc-desc{ font-family:'Inter',sans-serif; font-size:10.5px; color:#9397ab; line-height:1.4; }
+.modal.noc-tactics .mod-pill{ font-family:'Inter',sans-serif; font-weight:600; }
+.modal.noc-tactics .icon-badge{ background:rgba(145,132,217,.18); }
+.modal.noc-tactics .icon-badge.blue{ background:rgba(145,132,217,.18); }
+.modal.noc-tactics .icon-badge.crimson{ background:rgba(255,90,90,.16); }
 </style>
 </head>
 <body>
@@ -3346,19 +3391,19 @@ function setActiveLeague(league, girone){
 
 /* ============ TATTICHE ============ */
 const TACTICS = [
-  { id:'balanced', title:'Equilibrato', icon:'scale', desc:'Nessun bonus o malus: gioco pulito e prevedibile.', mod:{} },
-  { id:'rungun', title:'Run & Gun', icon:'run', desc:'Contropiede primario e difesa aggressiva per forzare palle perse: si gioca a ritmo altissimo in transizione.', mod:{ paceBonus:6, stealBonus:0.03, turnoverBonus:0.02, is3Bonus:0.04 } },
-  { id:'7sec', title:'7 Secondi o Meno', icon:'clock', desc:"Si tira o si attacca il ferro entro i primi 7 secondi di possesso, prima che la difesa avversaria riesca a schierarsi.", mod:{ paceBonus:8, makeAllPenalty:-0.004 } },
-  { id:'smallball', title:'Drive and Kick / Small Ball', icon:'users', desc:'Niente lunghi tradizionali: si penetra per collassare la difesa e si scarica da 3 sul perimetro.', mod:{ is3Bonus:0.06, astBonus:0.04, offRebPenalty:-0.06 } },
-  { id:'doublebig', title:'Doppio Lungo (Hi-Lo)', icon:'building-skyscraper', desc:"Due lunghi veri in campo: si domina l'area pitturata con il gioco alto-basso, meno tiri da fuori.", mod:{ rebBonus:0.07, make2Bonus:0.03, is3Penalty:-0.10 } },
-  { id:'5out', title:'Attacco Cinque Fuori', icon:'target', desc:"Tutti e cinque partono oltre l'arco: area completamente sgombra, massimo spazio per tagli e penetrazioni.", mod:{ is3Bonus:0.09, offRebPenalty:-0.08 } },
-  { id:'pnr', title:'Pick and Roll', icon:'arrows-cross', desc:"Si isola un blocco tra portatore di palla e compagno per costringere la difesa a scegliere, poi si colpisce sulle rotazioni.", mod:{ make2Bonus:0.015, is3Bonus:0.015, astBonus:0.015 } },
-  { id:'motion', title:'Motion Offense', icon:'refresh', desc:"Rifiuta il blocco continuo sulla palla: blocchi lontano dalla palla, scambi di posizione e tagli per creare tiri puliti.", mod:{ astBonus:0.05, make2Bonus:0.01, turnoverBonus:-0.02 } },
-  { id:'heroball', title:'Hero Ball / Iso-Heavy', icon:'star', desc:"Palla al giocatore piu talentuoso, gli altri quattro si spaziano: si affida tutto all'uno contro uno.", mod:{ isoBonus:3, astBonus:-0.02, makeAllPenalty:-0.006 } },
-  { id:'zone', title:'Difesa a Zona (2-3)', icon:'shield', desc:'Abbassa la percentuale da 2 avversaria, ma concede piu tentativi da 3.', mod:{ oppIs3Bonus:0.07, oppMake2Penalty:-0.03 } },
-  { id:'man', title:'Difesa a Uomo', icon:'shield', desc:'Marcatura diretta su ogni giocatore, equilibrata: nessun bonus o malus particolare.', mod:{} },
-  { id:'fullcourt', title:'Uomo a Tutto Campo', icon:'run', desc:'Pressione dal primo palleggio per stancare e forzare palle perse, ma concede canestri facili in transizione.', mod:{ stealBonus:0.04, turnoverBonus:0.03, oppIs3Bonus:0.03 } },
-  { id:'doubleteam', title:'Raddoppi Continui', icon:'users', desc:'Raddoppia sempre il miglior marcatore avversario: forza palle perse ma lascia scoperti i tiratori.', mod:{ stealBonus:0.05, oppIs3Bonus:0.08 } }
+  { id:'balanced', type:'off', title:'Equilibrato', icon:'scale', desc:'Nessun bonus o malus: gioco pulito e prevedibile.', mod:{} },
+  { id:'rungun', type:'off', title:'Run & Gun', icon:'run', desc:'Contropiede primario e difesa aggressiva per forzare palle perse: si gioca a ritmo altissimo in transizione.', mod:{ paceBonus:6, stealBonus:0.03, turnoverBonus:0.02, is3Bonus:0.04 } },
+  { id:'7sec', type:'off', title:'7 Secondi o Meno', icon:'clock', desc:"Si tira o si attacca il ferro entro i primi 7 secondi di possesso, prima che la difesa avversaria riesca a schierarsi.", mod:{ paceBonus:8, makeAllPenalty:-0.004 } },
+  { id:'smallball', type:'off', title:'Drive and Kick / Small Ball', icon:'users', desc:'Niente lunghi tradizionali: si penetra per collassare la difesa e si scarica da 3 sul perimetro.', mod:{ is3Bonus:0.06, astBonus:0.04, offRebPenalty:-0.06 } },
+  { id:'doublebig', type:'off', title:'Doppio Lungo (Hi-Lo)', icon:'building-skyscraper', desc:"Due lunghi veri in campo: si domina l'area pitturata con il gioco alto-basso, meno tiri da fuori.", mod:{ rebBonus:0.07, make2Bonus:0.03, is3Penalty:-0.10 } },
+  { id:'5out', type:'off', title:'Attacco Cinque Fuori', icon:'target', desc:"Tutti e cinque partono oltre l'arco: area completamente sgombra, massimo spazio per tagli e penetrazioni.", mod:{ is3Bonus:0.09, offRebPenalty:-0.08 } },
+  { id:'pnr', type:'off', title:'Pick and Roll', icon:'arrows-cross', desc:"Si isola un blocco tra portatore di palla e compagno per costringere la difesa a scegliere, poi si colpisce sulle rotazioni.", mod:{ make2Bonus:0.015, is3Bonus:0.015, astBonus:0.015 } },
+  { id:'motion', type:'off', title:'Motion Offense', icon:'refresh', desc:"Rifiuta il blocco continuo sulla palla: blocchi lontano dalla palla, scambi di posizione e tagli per creare tiri puliti.", mod:{ astBonus:0.05, make2Bonus:0.01, turnoverBonus:-0.02 } },
+  { id:'heroball', type:'off', title:'Hero Ball / Iso-Heavy', icon:'star', desc:"Palla al giocatore piu talentuoso, gli altri quattro si spaziano: si affida tutto all'uno contro uno.", mod:{ isoBonus:3, astBonus:-0.02, makeAllPenalty:-0.006 } },
+  { id:'zone', type:'def', title:'Difesa a Zona (2-3)', icon:'shield', desc:'Abbassa la percentuale da 2 avversaria, ma concede piu tentativi da 3.', mod:{ oppIs3Bonus:0.07, oppMake2Penalty:-0.03 } },
+  { id:'man', type:'def', title:'Difesa a Uomo', icon:'shield', desc:'Marcatura diretta su ogni giocatore, equilibrata: nessun bonus o malus particolare.', mod:{} },
+  { id:'fullcourt', type:'def', title:'Uomo a Tutto Campo', icon:'run', desc:'Pressione dal primo palleggio per stancare e forzare palle perse, ma concede canestri facili in transizione.', mod:{ stealBonus:0.04, turnoverBonus:0.03, oppIs3Bonus:0.03 } },
+  { id:'doubleteam', type:'def', title:'Raddoppi Continui', icon:'users', desc:'Raddoppia sempre il miglior marcatore avversario: forza palle perse ma lascia scoperti i tiratori.', mod:{ stealBonus:0.05, oppIs3Bonus:0.08 } }
 ];
 
 /* ============ EVENT POOL (OVR + piccoli bonus statistici) ============ */
@@ -3494,6 +3539,7 @@ const state = {
   draftStep:0,
   roster:[],
   tactic:'balanced',
+  tacticDef:'man',
   budget:60,
   midMarketDone:false,
   coppaItaliaWon:false,
@@ -4223,32 +4269,62 @@ function renderTacticDiagram(tacticId){
   `;
 }
 
+let nocTacticPickerSub = 'off';
+
+function nocUpdateRosterTacticLine(){
+  if(!nocRosterTacticLine) return;
+  const offT = TACTICS.find(x=>x.id===state.tactic);
+  const defT = TACTICS.find(x=>x.id===state.tacticDef);
+  nocRosterTacticLine.textContent = (offT?offT.title:'Equilibrato') + ' · ' + (defT?defT.title:'Difesa a Uomo');
+}
+
 function openTacticPicker(){
   const modal=document.getElementById('modal-content');
-  modal.classList.add('wide');
+  modal.classList.add('wide'); modal.classList.remove('live-match'); modal.classList.add('noc-tactics');
+  nocTacticPickerSub = 'off';
   modal.innerHTML = `
-    <div class="m-eyebrow">Impostazione Tattica</div>
-    <h3>Scegli lo schema di squadra</h3>
-    <p>Resta attivo finche non lo cambi di nuovo. Puoi modificarlo tra una settimana e l'altra.</p>
-    <div class="tactic-grid" id="tactic-modal-grid"></div>
+    <div class="noc-hero-kicker">IMPOSTAZIONE TATTICA</div>
+    <div class="noc-hero-title" style="font-size:19px;">Scegli i tuoi schemi</div>
+    <div class="noc-hero-sub" style="max-width:none;">Una tattica offensiva e una difensiva sono sempre attive insieme: i loro bonus e malus si sommano in ogni partita. Puoi cambiarle tra una settimana e l'altra.</div>
+    <div class="noc-segmented" id="noc-tactic-seg" style="margin-top:14px;">
+      <button type="button" class="noc-seg-btn active" data-sub="off"><span class="noc-seg-main">Offensiva</span></button>
+      <button type="button" class="noc-seg-btn" data-sub="def"><span class="noc-seg-main">Difensiva</span></button>
+    </div>
+    <div class="tactic-grid" id="tactic-modal-grid-off" style="margin-top:11.2px;"></div>
+    <div class="tactic-grid noc-hidden" id="tactic-modal-grid-def" style="margin-top:11.2px;"></div>
+    <button type="button" class="noc-btn noc-btn-primary noc-btn-full" id="tactic-modal-done" style="margin-top:14px;">Fatto</button>
   `;
-  const grid = modal.querySelector('#tactic-modal-grid');
+  const gridOff = modal.querySelector('#tactic-modal-grid-off');
+  const gridDef = modal.querySelector('#tactic-modal-grid-def');
   TACTICS.forEach(t=>{
     const unlocked = profile.unlockedTactics.includes(t.id);
+    const activeId = t.type==='def' ? state.tacticDef : state.tactic;
     const card=document.createElement('div');
-    card.className='tactic-card' + (t.id===state.tactic ? ' active' : '') + (unlocked?'':' locked-tactic');
+    card.className='tactic-card' + (t.id===activeId ? ' active' : '') + (unlocked?'':' locked-tactic');
     card.innerHTML = unlocked
       ? `${renderTacticDiagram(t.id)}<div class="tc-title"><span class="icon-badge blue">${iconSvg(t.icon||'target','15px')}</span> ${t.title}</div><div class="tc-desc">${t.desc}</div><div class="tc-effects">${describeMods(t.mod)}</div>`
       : `${renderTacticDiagram(t.id)}<div class="tc-title"><span class="icon-badge crimson">${iconSvg('lock','15px')}</span> ${t.title}</div><div class="tc-desc">Bloccata — sbloccabile nel Negozio.</div>`;
+    const ownGrid = (t.type==='def' ? gridDef : gridOff);
     if(unlocked){
       card.addEventListener('click', ()=>{
-        state.tactic = t.id;
+        if(t.type==='def') state.tacticDef = t.id; else state.tactic = t.id;
+        ownGrid.querySelectorAll('.tactic-card').forEach(c=>c.classList.remove('active'));
+        card.classList.add('active');
         renderTacticLabel();
-        closeModal();
+        nocUpdateRosterTacticLine();
       });
     }
-    grid.appendChild(card);
+    ownGrid.appendChild(card);
   });
+  modal.querySelectorAll('#noc-tactic-seg .noc-seg-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      nocTacticPickerSub = btn.dataset.sub;
+      modal.querySelectorAll('#noc-tactic-seg .noc-seg-btn').forEach(function(b){ b.classList.toggle('active', b===btn); });
+      gridOff.classList.toggle('noc-hidden', nocTacticPickerSub!=='off');
+      gridDef.classList.toggle('noc-hidden', nocTacticPickerSub!=='def');
+    });
+  });
+  modal.querySelector('#tactic-modal-done').addEventListener('click', closeModal);
   document.getElementById('overlay').classList.add('show');
 }
 
@@ -5243,6 +5319,7 @@ const NOC_TABS = [
 ];
 let nocActiveTab = 'club';
 let nocStagioneSub = 'partite';
+let nocTopPlayersStat = 'ppg';
 let nocAlbumSub = 'figurine';
 let nocAlbumLeagueFilter = null; // null = follow the currently active league/girone
 
@@ -5506,7 +5583,7 @@ function nocEnsureShell(){
   shell.innerHTML =
     '<div class="noc-app">' +
       '<div class="noc-header">' +
-        '<div class="noc-logo"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#b5abfc" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18"/><path d="M3 12h18"/><path d="M5.5 5.5c3 3 3 10 0 13"/><path d="M18.5 5.5c-3 3 -3 10 0 13"/></svg></div>' +
+        '<div class="noc-logo"><svg id="noc-logo-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#b5abfc" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18"/><path d="M3 12h18"/><path d="M5.5 5.5c3 3 3 10 0 13"/><path d="M18.5 5.5c-3 3 -3 10 0 13"/></svg></div>' +
         '<div class="noc-club-id">' +
           '<div class="noc-club-name" id="noc-club-name">Club</div>' +
           '<div class="noc-club-sub" id="noc-club-sub">SERIE A2 · 25-26</div>' +
@@ -5583,7 +5660,7 @@ function nocEnsureShell(){
   tacticCell.style.marginTop = '11.2px';
   const tacticLabel = document.createElement('div');
   tacticLabel.className = 'noc-stat-label';
-  tacticLabel.textContent = 'TATTICA ATTUALE';
+  tacticLabel.textContent = 'TATTICHE ATTUALI';
   nocRosterTacticLine = document.createElement('div');
   nocRosterTacticLine.className = 'noc-stat-value';
   nocRosterTacticLine.style.fontSize = '14px';
@@ -5610,6 +5687,7 @@ function nocEnsureShell(){
     '<div class="noc-segmented" id="noc-stagione-seg">' +
       '<button type="button" class="noc-seg-btn" data-sub="partite"><span class="noc-seg-main">Partite</span></button>' +
       '<button type="button" class="noc-seg-btn" data-sub="classifica"><span class="noc-seg-main">Classifica</span></button>' +
+      '<button type="button" class="noc-seg-btn" data-sub="migliori"><span class="noc-seg-main">Migliori</span></button>' +
     '</div>' +
     '<div class="noc-stagione-sub" id="noc-sub-partite">' +
       '<div class="noc-match-card" id="noc-match-card"></div>' +
@@ -5617,9 +5695,22 @@ function nocEnsureShell(){
       '<div class="noc-results-label" style="margin-top:16.8px;">ULTIMI RISULTATI</div>' +
       '<div id="noc-results-list"></div>' +
     '</div>' +
-    '<div class="noc-stagione-sub noc-hidden" id="noc-sub-classifica"><div class="noc-standings" id="noc-standings-table"></div></div>';
+    '<div class="noc-stagione-sub noc-hidden" id="noc-sub-classifica"><div class="noc-standings" id="noc-standings-table"></div></div>' +
+    '<div class="noc-stagione-sub noc-hidden" id="noc-sub-migliori">' +
+      '<div class="noc-segmented" id="noc-topplayers-seg">' +
+        LEADERBOARD_STATS.map(function(s){ return '<button type="button" class="noc-seg-btn' + (s.id==='ppg'?' active':'') + '" data-stat="' + s.id + '"><span class="noc-seg-main">' + s.label + '</span></button>'; }).join('') +
+      '</div>' +
+      '<div class="noc-standings" id="noc-topplayers-table" style="margin-top:8.4px;"></div>' +
+    '</div>';
   panels.stagione.querySelectorAll('#noc-stagione-seg .noc-seg-btn').forEach(function(btn){
     btn.addEventListener('click', function(){ nocStagioneSub = btn.dataset.sub; nocRefreshShell(); });
+  });
+  panels.stagione.querySelectorAll('#noc-topplayers-seg .noc-seg-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      nocTopPlayersStat = btn.dataset.stat;
+      panels.stagione.querySelectorAll('#noc-topplayers-seg .noc-seg-btn').forEach(function(b){ b.classList.toggle('active', b===btn); });
+      nocRenderTopPlayersTable();
+    });
   });
 
   /* ---- SHOP ---- */
@@ -5725,6 +5816,31 @@ function nocRenderStandingsTable(){
     }).join('');
 }
 
+/* "Migliori" sub-tab: top 15 league-wide players per stat category. Reuses the SAME data the old
+   openPlayerLeaderboard() modal already tracked all season (state.leagueStatsProgress, updated by
+   recordRealMatchStats() on every match — user's own AND simulated CPU-vs-CPU games alike, via
+   simulateClubPlayerStats()/simulateCpuLeagueWeek() — so the pool is genuinely league-wide, not
+   just the user's roster), just surfaced as a Nocturne-styled tab instead of a legacy modal. */
+function nocRenderTopPlayersTable(){
+  const box = document.getElementById('noc-topplayers-table');
+  if(!box || typeof getLeagueWidePlayerPool!=='function') return;
+  const pool = getLeagueWidePlayerPool();
+  const ranked = [...pool].sort(function(a,b){ return (b[nocTopPlayersStat]||0) - (a[nocTopPlayersStat]||0); }).slice(0,15);
+  box.innerHTML =
+    '<div class="noc-topplayers-head"><span>#</span><span>GIOCATORE</span><span>SQUADRA</span><span>'+nocTopPlayersStat.toUpperCase()+'</span></div>' +
+    ranked.map(function(p,i){
+      const isMe = p.club === state.teamName;
+      return (
+        '<div class="noc-topplayers-row'+(isMe?' me':'')+'">' +
+          '<span class="noc-pos">'+(i+1)+'</span>' +
+          '<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+p.cognome+'</span>' +
+          '<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+p.club+'</span>' +
+          '<span>'+(p[nocTopPlayersStat]||0).toFixed(1)+'</span>' +
+        '</div>'
+      );
+    }).join('');
+}
+
 /* Fresh Nocturne markup for the "Partite" sub-tab — replaces the old
    #week-strip/#match-feed relocation. Reads the SAME real state the old
    renderStrip()/renderMatchFeed() used (state.opponent, state.postSeason,
@@ -5786,9 +5902,10 @@ function nocRenderMatchTab(){
     return;
   }
   resultsList.innerHTML = feed.slice(-6).reverse().map(function(e){
+    const rowClass = 'noc-result-row' + (e.won ? ' result-win' : ' result-loss') + (state.autoPlay ? ' no-anim' : '');
     return (
       '<div>' +
-        '<div class="noc-result-row" data-feed-id="' + e.id + '" style="cursor:pointer;">' +
+        '<div class="' + rowClass + '" data-feed-id="' + e.id + '" style="cursor:pointer;">' +
           '<div class="noc-result-badge' + (e.won ? ' win' : '') + '">' + (e.won ? 'V' : 'S') + '</div>' +
           '<div class="noc-result-teams">vs ' + e.opponent + '</div>' +
           '<div class="noc-result-score">' + e.scoreYou + '&ndash;' + e.scoreOpp + '</div>' +
@@ -5899,6 +6016,11 @@ function nocRefreshShell(){
   if(clubSubEl) clubSubEl.textContent = nocLeagueLabel();
   const creditsEl = document.getElementById('noc-credits-val');
   if(creditsEl) creditsEl.textContent = (typeof profile !== 'undefined' ? profile.coins : 0).toLocaleString('it-IT');
+  // Jersey color otherwise only ever showed up during a live match screen — which the regular
+  // season skips entirely (instant "Gioca") — so tint the always-visible header badge with it too,
+  // giving the cosmetic a constant, practical payoff instead of one you rarely see.
+  const logoIconEl = document.getElementById('noc-logo-icon');
+  if(logoIconEl && typeof currentJerseyHex==='function') logoIconEl.style.stroke = currentJerseyHex();
 
   // nav active state — locked to Club until a team exists, since Rosa/
   // Stagione/Shop/Album have nothing to show yet
@@ -5931,10 +6053,7 @@ function nocRefreshShell(){
   nocRenderObjectives();
 
   // rosa tab
-  if(nocRosterTacticLine){
-    const t = (typeof TACTICS !== 'undefined') ? TACTICS.find(function(x){ return x.id===state.tactic; }) : null;
-    nocRosterTacticLine.textContent = t ? t.title : 'Equilibrato';
-  }
+  if(typeof nocUpdateRosterTacticLine==='function') nocUpdateRosterTacticLine();
 
   // stagione tab
   const giornataEl = document.getElementById('noc-giornata-val');
@@ -5954,11 +6073,18 @@ function nocRefreshShell(){
     });
     const subPartite = document.getElementById('noc-sub-partite');
     const subClassifica = document.getElementById('noc-sub-classifica');
+    const subMigliori = document.getElementById('noc-sub-migliori');
     if(subPartite) subPartite.classList.toggle('noc-hidden', nocStagioneSub!=='partite');
     if(subClassifica) subClassifica.classList.toggle('noc-hidden', nocStagioneSub!=='classifica');
+    if(subMigliori) subMigliori.classList.toggle('noc-hidden', nocStagioneSub!=='migliori');
   }
   nocRenderMatchTab();
   if(nocStagioneSub==='classifica') nocRenderStandingsTable();
+  if(nocStagioneSub==='migliori') nocRenderTopPlayersTable();
+
+  // rosa tab — re-render so a jersey/border change made in Album → Personalizzazione shows up
+  // immediately on switching here, instead of waiting for the next match/week to call render().
+  if(nocActiveTab==='rosa' && typeof renderRoster==='function') renderRoster();
 
   // shop tab (reuse the real shop renderer, just targeting our own container)
   if(nocActiveTab==='shop'){
@@ -6180,7 +6306,11 @@ function renderRoster(){
     const row=document.createElement('div');
     row.className='player-row role-accent-'+p.role;
     const customBorder = currentBorderHex();
-    if(customBorder) row.style.borderLeftColor = customBorder;
+    // border-left-color alone never showed: role-accent-* sets border-left with !important (and the
+    // Nocturne card style forces border-left:none !important on top of that), so neither context let
+    // this inline color through. A ring via box-shadow is a separate property nothing else touches,
+    // so the chosen card border is actually visible in both the legacy and Nocturne Rosa views.
+    if(customBorder) row.style.boxShadow = '0 0 0 2px ' + customBorder;
     row.draggable = true;
     row.innerHTML=`
       <div class="role-badge">${p.role}</div>
@@ -6661,6 +6791,11 @@ function applyEntraTuttoIfActive(roster){
 function startLiveMatch(){
   const oppRoster = buildOppRoster(state.opponent.name);
   const tactic = TACTICS.find(t=>t.id===state.tactic) || TACTICS[0];
+  // Offensive + defensive tactics apply together, but only in Carriera — RTG/MyPlayer keep their
+  // own single-slot state.tactic untouched (they never set state.tacticDef, so this is always a
+  // no-op for them regardless of any leftover value from a previous Carriera run).
+  const isCareerMode = !state.myPlayerCognome && !(state.rtg && state.rtg.active);
+  const tacticDef = isCareerMode ? TACTICS.find(t=>t.id===state.tacticDef) : null;
 
   let oppHotNight = false;
   if(state.rtg && state.rtg.active){
@@ -6670,6 +6805,7 @@ function startLiveMatch(){
   const baseMods = mergeModsAdditive(
     { moraleF: (state.morale-50)/4000, chemF: (state.chemistry-50)/4400, fatF: -avgFatigue(state)/6000 },
     tactic.mod,
+    tacticDef ? tacticDef.mod : {},
     state.nextMatchMods,
     getRtgActiveMods(),
     oppHotNight ? { oppHotNightBonus: 0.12 } : {}
@@ -7873,6 +8009,11 @@ function showSeasonEnd(){
 
 function closeModal(){
   document.getElementById('overlay').classList.remove('show');
+  // Nocturne-only modal variants (noc-confirm/noc-live-result) aren't part of the old wide/
+  // live-match toggling every other modal-opening function already does discipline for, so strip
+  // them here once, on close, instead of having to touch every one of those other functions.
+  const modal = document.getElementById('modal-content');
+  if(modal) modal.classList.remove('noc-confirm', 'noc-live-result', 'noc-tactics');
 }
 
 document.getElementById('overlay').addEventListener('click', (e)=>{
@@ -7909,23 +8050,23 @@ function runCoppaItalia(onDone){
 
 function showCoppaItaliaResult(won, champion, userQualified, onDone){
   const modal = document.getElementById('modal-content');
-  modal.classList.remove('live-match'); modal.classList.remove('wide');
+  modal.classList.remove('live-match'); modal.classList.remove('wide'); modal.classList.add('noc-confirm');
   let title, message;
   if(!userQualified){
     title = 'Coppa Italia Conclusa';
     message = 'Non ti sei qualificato questa volta (servono le prime 4 posizioni a meta stagione). '+champion+' si aggiudica il trofeo.';
   } else if(won){
-    title = 'TROFEO VINTO!';
+    title = 'Trofeo Vinto!';
     message = state.teamName+' alza la Coppa Italia LNP A2!';
   } else {
     title = 'Finale Persa';
     message = champion+' vince la Coppa Italia. La tua corsa nel torneo finisce qui.';
   }
   modal.innerHTML = `
-    <div class="m-eyebrow">Coppa Italia LNP A2</div>
-    <h3>${title}</h3>
-    <div class="result-box">${message}</div>
-    <button class="modal-btn" id="btn-coppa-continue">Torna al Campionato</button>
+    <div class="noc-hero-kicker">COPPA ITALIA LNP A2</div>
+    <div class="noc-hero-title" style="font-size:19px;">${title}</div>
+    <div class="noc-hero-sub" style="max-width:none;">${message}</div>
+    <button type="button" class="noc-btn noc-btn-primary noc-btn-full" id="btn-coppa-continue" style="margin-top:16.8px;">Torna al Campionato</button>
   `;
   document.getElementById('btn-coppa-continue').addEventListener('click', ()=>{ closeModal(); onDone(); });
   document.getElementById('overlay').classList.add('show');
@@ -7973,10 +8114,10 @@ const CARD_BORDERS = [
 function defaultProfile(){
   return {
     coins:0,
-    unlockedTactics:['balanced','rungun','7sec','smallball','doublebig','man'],
+    unlockedTactics:['balanced','man'], // one offensive + one defensive to start; the rest unlock via pacchetti
     ownedJerseys:['default'], ownedBorders:['default'],
     selectedJersey:'default', selectedBorder:'default',
-    pendingCreditsBonus:0, pendingTalent:false,
+    pendingCreditsBonus:0,
     albumCards:{}
   };
 }
@@ -8019,7 +8160,6 @@ function coinsForOutcome(outcome){
 
 function rollPackItem(){
   const roll = Math.random();
-  if(roll < 0.02) return { type:'talent' };
   if(roll < 0.05) return { type:'credits', amount:40 };
   if(roll < 0.30){
     const locked = TACTICS.filter(t=>!profile.unlockedTactics.includes(t.id));
@@ -8038,7 +8178,6 @@ function rollPackItem(){
 }
 
 function applyPackItem(item){
-  if(item.type==='talent'){ profile.pendingTalent = true; return 'Prospetto Talento! La prossima squadra fittizia che crei parte con un giocatore forte in regalo.'; }
   if(item.type==='credits'){ profile.pendingCreditsBonus += item.amount; return '+'+item.amount+' crediti mercato bonus per la prossima partita che inizi.'; }
   if(item.type==='tactic'){
     if(!profile.unlockedTactics.includes(item.id)) profile.unlockedTactics.push(item.id);
@@ -8055,13 +8194,11 @@ function applyPackItem(item){
 }
 
 function rarityOf(item){
-  if(item.type==='talent') return 'ultra';
   if(item.type==='credits') return 'rare';
   if(item.type==='tactic') return 'uncommon';
   return 'common';
 }
 function iconOf(item){
-  if(item.type==='talent') return 'star';
   if(item.type==='credits') return 'cash';
   if(item.type==='tactic') return item.icon || 'target';
   if(item.type==='jersey') return 'shirt-sport';
@@ -8093,6 +8230,8 @@ function renderShopScreen(modal){
     if(profile.coins<PACK_COST) return;
     ensureGlobalAudio();
     profile.coins -= PACK_COST;
+    state.packsOpened = (state.packsOpened||0) + 1;
+    saveGame();
     const items = [rollPackItem(), rollPackItem(), rollPackItem()];
     const messages = items.map(applyPackItem);
     saveProfile();
@@ -8216,13 +8355,13 @@ function hasSave(){
    stagione. */
 function nocResetRun(){
   const modal = document.getElementById('modal-content');
-  modal.classList.remove('wide'); modal.classList.remove('live-match');
+  modal.classList.remove('wide'); modal.classList.remove('live-match'); modal.classList.add('noc-confirm');
   modal.innerHTML = `
-    <div class="m-eyebrow">Resetta Run</div>
-    <h3>Ricominciare dal Draft?</h3>
-    <p>La stagione in corso (rosa, calendario, classifica) verrà cancellata e tornerai alla scelta del club. Monete e obiettivi restano invariati.</p>
-    <button class="modal-btn" id="btn-reset-run-confirm" style="margin-bottom:8px;">Sì, ricomincia dal Draft</button>
-    <button class="modal-btn secondary" id="btn-reset-run-cancel">Annulla</button>
+    <div class="noc-hero-kicker">RESETTA RUN</div>
+    <div class="noc-hero-title" style="font-size:19px;">Ricominciare dal Draft?</div>
+    <div class="noc-hero-sub" style="max-width:none;">La stagione in corso (rosa, calendario, classifica) verrà cancellata e tornerai alla scelta del club. Monete e obiettivi restano invariati.</div>
+    <button type="button" class="noc-btn noc-btn-danger noc-btn-full" id="btn-reset-run-confirm" style="margin-top:16.8px;">Sì, ricomincia dal Draft</button>
+    <button type="button" class="noc-btn noc-btn-secondary noc-btn-full" id="btn-reset-run-cancel" style="margin-top:8px;">Annulla</button>
   `;
   document.getElementById('btn-reset-run-confirm').addEventListener('click', ()=>{
     try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
@@ -8493,22 +8632,6 @@ document.getElementById('btn-confirm-fictional-team').addEventListener('click', 
   state.chosenClub = city;
   state.draftStep = 0;
   state.formation = null;
-  if(profile.pendingTalent){
-    profile.pendingTalent = false;
-    saveProfile();
-    const itaRanges = computeItaRanges();
-    const roles = ['PG','SG','SF','PF','C'];
-    const role = roles[Math.floor(Math.random()*roles.length)];
-    state.roster.push({
-      nome:'Prospetto', cognome:'Talento', club:'Fittizio', role:macroRole(role), naz:'ITA',
-      ovr: Math.round(itaRanges.ovr.max),
-      ppg: Math.round(itaRanges.ppg.max*10)/10,
-      apg: Math.round(itaRanges.apg.max*0.5*10)/10,
-      rpg: Math.round(itaRanges.rpg.max*0.6*10)/10,
-      spg: Math.round(itaRanges.spg.max*0.6*10)/10,
-      fatigue:0, traits:[], starter:false
-    });
-  }
   document.getElementById('fictional-team-screen').classList.add('hidden');
   document.getElementById('draft-screen').classList.remove('hidden');
   renderFormationPicker();
