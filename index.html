@@ -1656,7 +1656,8 @@ body{
 .noc-pcard-closed .noc-ball{ opacity:.5; }
 .noc-pcard-head{ display:flex; justify-content:space-between; padding:8.4px 9.8px; }
 .noc-pcard-rarity{ font:600 8.5px/1 'Inter',sans-serif; text-transform:uppercase; letter-spacing:.06em; }
-.noc-pcard-role{ font-size:9px; color:rgba(233,233,237,.55); }
+.noc-pcard-role{ font-size:9px; color:rgba(233,233,237,.55); display:flex; align-items:center; gap:5px; }
+.noc-pcard-ex-badge{ font:700 8px/1 'Inter',sans-serif; letter-spacing:.04em; color:#1a1408; background:#e3af35; border-radius:4px; padding:2px 4px; }
 .noc-pcard-body{ flex:1; position:relative; display:flex; align-items:flex-end; justify-content:center; overflow:hidden; }
 .noc-pcard-watermark{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:64px; font-weight:700; color:rgba(233,233,237,.07); }
 .noc-pcard-photo{ position:relative; width:64%; height:74%; border-radius:8px 8px 0 0; display:flex; align-items:flex-end; justify-content:center;
@@ -2327,6 +2328,7 @@ const FORMATIONS = [
   { id:'2-1-2', title:'2 Guardie / 1 Ala / 2 Centri', desc:'Modulo fisico, dominio a rimbalzo ma meno tiro dal perimetro.', roles:['G','G','F','C','C'] }
 ];
 const DRAFT_ROLE_LABELS = { G:'Guardia', F:'Ala', C:'Centro' };
+const DRAFT_ROLE_LABELS_PLURAL = { G:'Guardie', F:'Ali', C:'Centri' };
 
 /* ============ ROAD TO GLORY (modalita' roguelike) ============ */
 const RTG_MAX_POWERUP_SLOTS = 6;
@@ -2702,15 +2704,17 @@ function nocFlashBurst(){
 }
 
 /* Face HTML for a draft candidate (player card) */
+const NOC_BLOCKED_LABELS = { 'ex-limit':'Limite EX', 'role-full':'Ruolo completo' };
 function nocPlayerCardFace(cand){
   const p = cand.player;
   const rarLabel = NOC_RARITY_LABEL[cand.rarity] || 'COMUNE';
-  const roleLabel = NOC_ROLE_LABEL[p.role] || NOC_ROLE_LABEL[typeof macroRole==='function' ? macroRole(p.ruolo1) : null] || '';
-  const btnLabel = cand.blocked ? 'Limite EX' : 'Seleziona';
+  const roleLabel = NOC_ROLE_LABEL[cand.slotRole] || NOC_ROLE_LABEL[p.role] || NOC_ROLE_LABEL[typeof macroRole==='function' ? macroRole(p.ruolo1) : null] || '';
+  const exBadge = p.naz==='EX' ? '<span class="noc-pcard-ex-badge">EX</span>' : '';
+  const btnLabel = cand.blocked ? (NOC_BLOCKED_LABELS[cand.blockedReason] || 'Limite EX') : 'Seleziona';
   return (
     '<div class="noc-pcard-head">' +
       '<span class="noc-pcard-rarity" style="color:var(--rc-text);">' + rarLabel + '</span>' +
-      '<span class="noc-pcard-role">' + roleLabel + '</span>' +
+      '<span class="noc-pcard-role">' + roleLabel + exBadge + '</span>' +
     '</div>' +
     '<div class="noc-pcard-body">' +
       '<span class="noc-pcard-watermark">' + nocInitials(p.nome, p.cognome) + '</span>' +
@@ -2840,9 +2844,35 @@ function nocRunPackFlow(mode, cardDefs, opts){
       }
     }
 
-    function openPack(){
-      if(opened) return;
-      opened = true;
+    // Reroll: only offered by callers that pass allowReroll/onReroll (the Carriera draft), and only
+    // shown once the pack is OPEN — you need to actually see the 5 candidates before deciding you
+    // don't like them. Rerolling rebuilds the grid from scratch (fresh closed cards, revealedCount
+    // reset) with a newly generated pool. RTG/shop packs never set these opts, so they're
+    // completely unaffected.
+    let rerollBtn = null;
+    function showRerollBtnIfAllowed(){
+      if(!opts.allowReroll || typeof opts.onReroll !== 'function') return;
+      if(!rerollBtn){
+        rerollBtn = document.createElement('button');
+        rerollBtn.type = 'button';
+        rerollBtn.className = 'noc-btn noc-btn-secondary noc-btn-full';
+        rerollBtn.style.marginTop = '11.2px';
+        rerollBtn.addEventListener('click', function(ev){
+          ev.stopPropagation();
+          if((state.rerollsLeft||0)<=0) return;
+          state.rerollsLeft--;
+          cardDefs = opts.onReroll();
+          revealedCount = 0;
+          buildGrid();
+        });
+      }
+      const left = state.rerollsLeft||0;
+      rerollBtn.textContent = 'Rerolla il pacchetto (' + left + ' rimasti)';
+      rerollBtn.disabled = left<=0;
+      dom.stage.appendChild(rerollBtn);
+    }
+
+    function buildGrid(){
       dom.stage.innerHTML = '';
       const grid = document.createElement('div');
       grid.className = 'noc-cards-grid' + (n===1 ? ' solo' : '');
@@ -2870,6 +2900,13 @@ function nocRunPackFlow(mode, cardDefs, opts){
           setTimeout(step, 180);
         })();
       };
+      showRerollBtnIfAllowed();
+    }
+
+    function openPack(){
+      if(opened) return;
+      opened = true;
+      buildGrid();
     }
 
     dom.closeBtn.addEventListener('click', function(){
@@ -2883,10 +2920,8 @@ function nocRunPackFlow(mode, cardDefs, opts){
    (i 5 candidati per il ruolo del round corrente). Il reveal e la scelta
    restano DENTRO il pacchetto: tocchi una carta per rivelarla, poi tocchi
    "Seleziona" sulla carta scelta — esattamente come prima, solo restyled. */
-function openDraftPack(opts){
-  opts = opts || {};
-  const pool = opts.pool || [];
-  const cardDefs = pool.map(function(c){
+function nocMapDraftPoolToCardDefs(pool){
+  return pool.map(function(c){
     const rarClass = NOC_RARITY_CLASS[c.rarity] || NOC_RARITY_CLASS.common;
     return {
       rarClass: rarClass,
@@ -2897,7 +2932,17 @@ function openDraftPack(opts){
       faceHtml: nocPlayerCardFace(c)
     };
   });
-  return nocRunPackFlow('draft', cardDefs, { packLabel: opts.packLabel || 'Draft Pack' });
+}
+
+function openDraftPack(opts){
+  opts = opts || {};
+  const pool = opts.pool || [];
+  const cardDefs = nocMapDraftPoolToCardDefs(pool);
+  return nocRunPackFlow('draft', cardDefs, {
+    packLabel: opts.packLabel || 'Draft Pack',
+    allowReroll: opts.allowReroll,
+    onReroll: opts.onReroll ? function(){ return nocMapDraftPoolToCardDefs(opts.onReroll()); } : null
+  });
 }
 
 /* Apertura pacchetto usata dal negozio: opts.cards sono gli oggetti/cosmetici
@@ -3001,24 +3046,18 @@ function nocShowEndOfSeason(data){
   });
   col.querySelector('#noc-eos-restart').addEventListener('click', function(){
     closeEos();
-    nocRestartSeason();
+    nocStartNewDraft();
   });
 }
 
-/* Restart button (per user request: "serve un pulsante per ricominciare la
-   stagione quando finisce"). startSeason() alone isn't enough to begin a
-   fresh season — it never resets state.week/state.record, since it's also
-   the function that boots the VERY FIRST season after the draft (where
-   those are already at their defaults). Same club, same roster, brand new
-   38-game schedule/standings. */
-function nocRestartSeason(){
-  state.week = 1;
-  state.record = { w:0, l:0 };
-  state.postSeason = null;
-  startSeason();
-  nocActiveTab = 'stagione';
-  if(typeof nocEnsureShell === 'function') nocEnsureShell();
-  if(typeof nocRefreshShell === 'function') nocRefreshShell();
+/* Per user request: a run always ends with the season — finding one overpowered roster and
+   re-running it forever isn't the point, every run drafts a fresh team. So "Nuova Stagione" (from
+   the end-of-season overlay, or from the Stagione tab once the season is over) is now exactly the
+   same full reset as "Resetta Run": no confirmation needed here, since by this point the season
+   has already concluded (there's no in-progress run left to lose). */
+function nocStartNewDraft(){
+  try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+  location.reload();
 }
 
 
@@ -3537,6 +3576,7 @@ const state = {
   teamName:null,
   formation:null,
   draftStep:0,
+  rerollsLeft:1,
   roster:[],
   tactic:'balanced',
   tacticDef:'man',
@@ -3978,7 +4018,6 @@ function renderDraftProgress(){
   const totalSteps = state.formation.length + BENCH_ROLES.length;
   box.innerHTML = Array.from({length:totalSteps}).map((_,i)=>{
     let cls='step';
-    if(i<state.formation.length) cls+=' step-starter'; else cls+=' step-bench';
     if(i<state.draftStep) cls+=' done';
     else if(i===state.draftStep) cls+=' active';
     return `<div class="${cls}"></div>`;
@@ -4037,42 +4076,104 @@ function flipDraftCard(cardEl, rarity){
   playDraftFlipSound(rarity);
 }
 
+const MIXED_PACK_SIZE = 6;
+
+/* Quanti giocatori per ruolo mancano ancora in totale (titolari + riserve
+   sommati insieme) — e' il "budget" che i pacchetti a ruoli misti devono
+   rispettare round dopo round. Il modulo scelto dice gia' quanti titolari e
+   quante riserve servono per ruolo, quindi il draft non ha piu' bisogno di
+   distinguere una "fase titolari" da una "fase panchina": e' un unico flusso
+   di 8 pick, e pickPlayer() decide da solo se un pick e' titolare o riserva
+   in base a quanti giocatori di quel ruolo sono gia' stati presi. */
+function currentRoleQuotas(){
+  const totalNeeded = { G:0, F:0, C:0 };
+  state.formation.forEach(function(r){ totalNeeded[r]++; });
+  BENCH_ROLES.forEach(function(r){ totalNeeded[r]++; });
+  const remaining = Object.assign({}, totalNeeded);
+  state.roster.forEach(function(p){ if(remaining[p.role]>0) remaining[p.role]--; });
+  return remaining;
+}
+
+/* Pacchetto a ruoli misti (per richiesta utente, ispirato a un draft di gioco
+   di calcio visto come esempio): a differenza del vecchio sistema — un round
+   intero bloccato su un solo ruolo — ogni pacchetto ora mischia G/F/C a caso,
+   ma garantisce SEMPRE almeno 1 carta di un ruolo ancora richiesto in questa
+   fase, cosi' non capita mai un pacchetto "inutile". Le altre carte possono
+   comunque essere di un ruolo gia' completato: restano visibili ma bloccate
+   (bottone "Ruolo completo", stesso pattern gia' usato per il limite EX) cosi'
+   l'utente capisce perche' non sono selezionabili invece di sparire e basta. */
+function buildMixedDraftPool(){
+  const quotas = currentRoleQuotas();
+  const allRoles = ['G','F','C'];
+  const neededRoles = allRoles.filter(function(r){ return quotas[r]>0; });
+  const currentExCount = state.roster.filter(p=>p.naz==='EX').length;
+  const exCapped = currentExCount >= MAX_EX_PLAYERS;
+  const usedInPack = new Set();
+
+  function drawOne(role, excludeExIfCapped){
+    let pool = eligiblePool(role).filter(function(p){ return !usedInPack.has(p.nome+'|'+p.cognome); });
+    if(excludeExIfCapped && exCapped) pool = pool.filter(function(p){ return p.naz!=='EX'; });
+    pool = shuffled(pool);
+    const p = pool[0];
+    if(!p) return null;
+    usedInPack.add(p.nome+'|'+p.cognome);
+    const isEX = p.naz==='EX';
+    let blocked=false, blockedReason=null;
+    if(isEX && exCapped){ blocked=true; blockedReason='ex-limit'; }
+    else if(quotas[role]<=0){ blocked=true; blockedReason='role-full'; }
+    return { player:p, rarity: draftRarityTier(p.ovr), blocked:blocked, blockedReason:blockedReason, slotRole:role };
+  }
+
+  const cards = [];
+  // Carta garantita: prova i ruoli ancora richiesti (in ordine casuale) finche' non ne
+  // trova uno con almeno un candidato NON EX-cappato — cosi' la carta "garantita" non
+  // puo' mai risultare a sua volta bloccata dal tetto EX, lasciando il pacchetto vuoto.
+  const rolesToTry = shuffled(neededRoles.slice());
+  for(let i=0;i<rolesToTry.length;i++){
+    const guaranteed = drawOne(rolesToTry[i], true);
+    if(guaranteed){ cards.push(guaranteed); break; }
+  }
+
+  let attempts = 0;
+  while(cards.length < MIXED_PACK_SIZE && attempts < 60){
+    attempts++;
+    const role = allRoles[Math.floor(Math.random()*allRoles.length)];
+    const c = drawOne(role, false);
+    if(c) cards.push(c);
+  }
+  return cards;
+}
+
 function renderDraftRound(){
   renderDraftProgress();
-  const isBenchRound = state.draftStep >= state.formation.length;
-  const role = isBenchRound ? BENCH_ROLES[state.draftStep - state.formation.length] : state.formation[state.draftStep];
-  const sameRoleBefore = isBenchRound
-    ? BENCH_ROLES.slice(0, state.draftStep - state.formation.length).filter(r=>r===role).length
-    : state.formation.slice(0,state.draftStep).filter(r=>r===role).length;
-  const roleLabel = DRAFT_ROLE_LABELS[role] + (sameRoleBefore>0 ? ' n.'+(sameRoleBefore+1) : '');
-  document.getElementById('draft-title').innerText = isBenchRound
-    ? `${state.teamName} — Scegli la tua riserva: ${roleLabel}`
-    : `${state.teamName} — Scegli il tuo titolare: ${roleLabel}`;
+  const quotas = currentRoleQuotas();
+  const neededSummary = ['G','F','C']
+    .filter(function(r){ return quotas[r]>0; })
+    .map(function(r){ return quotas[r]+' '+(quotas[r]>1?DRAFT_ROLE_LABELS_PLURAL[r]:DRAFT_ROLE_LABELS[r]); })
+    .join(' · ');
+  document.getElementById('draft-title').innerText = `${state.teamName} — Scegli un giocatore`;
   const eyebrow = document.getElementById('draft-eyebrow');
-  eyebrow.className = 'eyebrow role-eyebrow-' + role;
-  eyebrow.textContent = (isBenchRound ? 'Fase Panchina · Ruolo ' : 'Fase Preliminare · Ruolo ') + role;
-  const fullPool = eligiblePool(role);
-  const pool = shuffled(fullPool).slice(0,5);
-  const currentExCount = state.roster.filter(p=>p.naz==='EX').length;
+  eyebrow.className = 'eyebrow';
+  eyebrow.textContent = 'Draft · Mancano: ' + neededSummary;
   const grid = document.getElementById('draft-grid');
   grid.innerHTML='';
   document.getElementById('draft-reveal-all-btn').style.display = 'none';
-  if(pool.length===0){
-    grid.innerHTML = `<div class="tc-desc" style="grid-column:1/-1;">Nessun giocatore disponibile per questo ruolo: verra assegnato automaticamente il migliore disponibile in un ruolo affine.</div>`;
+  const draftPool = buildMixedDraftPool();
+  if(draftPool.length===0){
+    grid.innerHTML = `<div class="tc-desc" style="grid-column:1/-1;">Nessun giocatore disponibile: verra assegnato automaticamente il migliore disponibile.</div>`;
+    const fallbackRole = ['G','F','C'].find(function(r){ return quotas[r]>0; }) || 'G';
     const fallback = ALL_PLAYERS.filter(p=> !state.roster.map(r=>r.nome+'|'+r.cognome).includes(p.nome+'|'+p.cognome)).sort((a,b)=>b.ovr-a.ovr)[0];
-    if(fallback) setTimeout(()=>pickPlayer(role, fallback), 400);
+    if(fallback) setTimeout(()=>pickPlayer(fallbackRole, fallback), 400);
     return;
   }
-  const draftPool = pool.map(p=>{
-    const isEX = p.naz==='EX';
-    return { player:p, rarity: draftRarityTier(p.ovr), blocked: isEX && currentExCount >= MAX_EX_PLAYERS };
-  });
   openDraftPack({
-    packLabel: isBenchRound ? 'Riserva Pack' : 'Titolare Pack',
-    footer: roleLabel,
-    pool: draftPool
+    packLabel: 'Draft Pack',
+    footer: neededSummary,
+    pool: draftPool,
+    allowReroll: true,
+    onReroll: function(){ return buildMixedDraftPool(); }
   }).then(function(picked){
-    pickPlayer(role, picked.player);
+    pickPlayer(picked.slotRole, picked.player);
   });
 }
 
@@ -4083,11 +4184,19 @@ function pickPlayer(role, p){
   if(p.naz==='EX' && currentExCount >= MAX_EX_PLAYERS){
     return; // sicurezza anti-bug: non permette comunque il pick oltre il limite
   }
-  const isBenchRound = state.draftStep >= state.formation.length;
+  if((currentRoleQuotas()[role]||0)<=0){
+    return; // sicurezza anti-bug: il pacchetto a ruoli misti blocca gia' le carte di ruoli esauriti, questo e' solo un secondo controllo
+  }
+  // Titolare o riserva si decide da solo, ruolo per ruolo: i primi N pick di un ruolo
+  // (N = quanti titolari di quel ruolo chiede il modulo) sono titolari, gli altri
+  // (fino al numero di riserve di quel ruolo) sono panchina — nessuna fase separata.
+  const starterSlotsForRole = state.formation.filter(function(r){ return r===role; }).length;
+  const alreadyPickedOfRole = state.roster.filter(function(pl){ return pl.role===role; }).length;
+  const isStarterPick = alreadyPickedOfRole < starterSlotsForRole;
   state.roster.push({
     nome:p.nome, cognome:p.cognome, club:p.club, role:role, naz:p.naz || 'ITA',
     ovr:p.ovr, ppg:p.ppg, apg:p.apg, rpg:p.rpg, spg:p.spg,
-    fatigue:0, traits:[], starter:!isBenchRound
+    fatigue:0, traits:[], starter:isStarterPick
   });
   if(typeof addCardToAlbum==='function') addCardToAlbum(p);
   state.draftStep++;
@@ -5011,11 +5120,33 @@ function runSeriesRound(pairs, stageLabel, callback){
   const winners = [];
   let idx=0;
   function next(){
-    if(idx>=pairs.length){ callback(winners); return; }
+    if(idx>=pairs.length){ pauseAfterRound(stageLabel, function(){ callback(winners); }); return; }
     const [a,b] = pairs[idx]; idx++;
     resolveSeries(a,b,stageLabel,5,(w)=>{ winners.push(w); next(); });
   }
   next();
+}
+
+/* Su richiesta dell'utente: prima le partite del tabellone si incatenavano una dopo l'altra
+   senza soluzione di continuita' (Quarti -> Semifinale -> Finale tutto di fila, live match dopo
+   live match), senza mai dare tempo di cambiare tattiche o titolari fra un turno e l'altro. Ora,
+   a fine turno (fine di TUTTE le serie di runSeriesRound, sia Quarti che Semifinale — la Finale
+   usa resolveSeries direttamente e quindi non ha un turno successivo da preparare), ci si ferma:
+   la tab Stagione mostra "Turno completato" con un bottone Continua, cosi' l'utente puo' andare
+   su Tattica/Rosa a sistemare la squadra prima di ripartire. Se l'utente e' gia' stato eliminato
+   in questo turno non c'e' nulla da preparare (il resto del tabellone si risolve comunque da solo
+   senza il suo intervento), quindi si prosegue subito senza fermarsi. */
+function pauseAfterRound(roundLabel, resumeFn){
+  if(state.postSeason.userEliminatedStage){ resumeFn(); return; }
+  state.postSeason.awaitingRoundContinue = { label: roundLabel, resume: resumeFn };
+  if(typeof nocRefreshShell === 'function') nocRefreshShell();
+}
+
+function continueAfterRoundPause(){
+  const pending = state.postSeason && state.postSeason.awaitingRoundContinue;
+  if(!pending) return;
+  state.postSeason.awaitingRoundContinue = null;
+  pending.resume();
 }
 
 function computeSeasonMVP(){
@@ -5033,26 +5164,51 @@ function computeSeasonMVP(){
 
 function finishPostSeason(message, outcome){
   state.postSeason.active = false;
-  // Nothing else resets state.week/state.opponent once the season is over, so without this flag
-  // the Stagione tab keeps showing a clickable "Gioca" against the last (already-eliminated)
-  // playoff opponent — clicking it plays a phantom match and, since state.week is still >= the
-  // schedule length, immediately restarts the whole postseason bracket from scratch (the reported
-  // "posso rigiocare i playoff all'infinito" bug). Cleared again in startSeason()/nocRestartSeason().
-  state.seasonOver = true;
+  // Nothing else resets state.opponent once the season is over, so without clearing it the
+  // Stagione tab keeps showing a clickable "Gioca" against the last (already-eliminated) playoff
+  // opponent — clicking it plays a phantom match and, since state.week is still >= the schedule
+  // length, immediately restarts the whole postseason bracket from scratch (the reported "posso
+  // rigiocare i playoff all'infinito" bug).
   state.opponent = null;
   const finalOutcome = outcome || state.postSeason.userEliminatedStage || 'Stagione conclusa';
-  addHallOfFameEntry({
-    teamName: state.teamName,
-    club: state.chosenClub,
-    outcome: finalOutcome,
-    coppaItalia: !!state.coppaItaliaWon,
-    record: state.record.w+'-'+state.record.l
-  });
-  const coinsEarned = coinsForOutcome(finalOutcome);
-  profile.coins += coinsEarned;
-  saveProfile();
-  const mvp = computeSeasonMVP();
-  nocShowEndOfSeason({ message, coinsEarned, mvp, resultsLog: state.postSeason.resultsLog });
+  // Capture these from THIS season's postSeason before runSupercoppa (if it runs below) replaces
+  // state.postSeason with its own fresh bracket object.
+  const resultsLog = state.postSeason.resultsLog;
+  const standingsFinal = state.postSeason.standingsFinal || [];
+  const top4 = standingsFinal.slice(0,4).map(function(t){ return t.name; });
+
+  // Per user request, a run always ends with its season — no more "same roster, new season"
+  // continuation — so the Supercoppa (top 4 finish) moved from "start of the next season" to a
+  // bonus final played at the END of THIS run, right before the real end-of-season screen, against
+  // the 3 other clubs that finished alongside you this same year. Skipped entirely if you didn't
+  // qualify (no "you weren't in the top 4" screen to sit through on your way out).
+  function wrapUpSeason(){
+    state.seasonOver = true;
+    // runSupercoppa() (if it ran) replaced state.postSeason with its own fresh bracket object with
+    // no standingsFinal, but nocShowEndOfSeason() reads state.postSeason.standingsFinal directly
+    // to compute the final league placement shown on the EOS screen — restore it from the
+    // just-concluded season so that placement is still correct after a Supercoppa detour.
+    state.postSeason.standingsFinal = standingsFinal;
+    addHallOfFameEntry({
+      teamName: state.teamName,
+      club: state.chosenClub,
+      outcome: finalOutcome,
+      coppaItalia: !!state.coppaItaliaWon,
+      supercoppa: !!state.careerSupercoppaWon,
+      record: state.record.w+'-'+state.record.l
+    });
+    const coinsEarned = coinsForOutcome(finalOutcome);
+    profile.coins += coinsEarned;
+    saveProfile();
+    const mvp = computeSeasonMVP();
+    nocShowEndOfSeason({ message, coinsEarned, mvp, resultsLog });
+  }
+
+  if(top4.length>=4 && top4.includes(state.teamName)){
+    runSupercoppa(top4, wrapUpSeason);
+  } else {
+    wrapUpSeason();
+  }
 }
 
 // Percorso promozione: seed 2-13 (diretti 2-7, via play-in 8-13)
@@ -5169,6 +5325,11 @@ function buildFullSchedule(opponentNames){
   return andata.concat(ritorno);
 }
 
+function randomTacticId(type){
+  const pool = TACTICS.filter(t=>t.type===type);
+  return pool[Math.floor(Math.random()*pool.length)].id;
+}
+
 function startSeason(){
   state.phase='hub';
   state.autoPlay = false;
@@ -5180,7 +5341,14 @@ function startSeason(){
     saveProfile();
   }
   const opponentClubs = ALL_CLUBS.filter(c=>c.name!==state.chosenClub);
-  state.standings = opponentClubs.map(c=>({ name:c.name, power:c.power, w:0, l:0 }));
+  // Each club gets its own offense+defense tactic pair for the season (any tactic, not gated by
+  // the user's own profile.unlockedTactics — that unlock list is a player-facing reward, not a
+  // simulation constraint), so matches actually feel different depending on who you're facing
+  // instead of every CPU team being tactically neutral.
+  state.standings = opponentClubs.map(c=>({
+    name:c.name, power:c.power, w:0, l:0,
+    tacticOff: randomTacticId('off'), tacticDef: randomTacticId('def')
+  }));
   state.schedule = buildFullSchedule(opponentClubs.map(c=>c.name));
   document.getElementById('draft-screen').classList.add('hidden');
   document.getElementById('career-roster-review-screen').classList.add('hidden');
@@ -5861,8 +6029,17 @@ function nocRenderMatchTab(){
 
   const feed = state.matchFeed || [];
   const inPostSeason = !!(state.postSeason && state.postSeason.active);
+  const roundPause = inPostSeason ? state.postSeason.awaitingRoundContinue : null;
 
-  if(inPostSeason){
+  if(roundPause){
+    cardBox.innerHTML =
+      '<div class="noc-match-kicker">TURNO COMPLETATO</div>' +
+      '<div class="noc-match-row"><div class="noc-match-team">' + roundPause.label + '</div></div>' +
+      '<div class="noc-match-line" style="color:#75798c;font-size:11px;margin-top:4px;">Vai su Tattica o Rosa per sistemare la squadra, poi continua al turno successivo.</div>';
+    controlsBox.innerHTML = '<button type="button" class="noc-btn noc-btn-primary noc-btn-full" id="noc-btn-round-continue">Continua al turno successivo</button>';
+    const roundContinueBtn = controlsBox.querySelector('#noc-btn-round-continue');
+    if(roundContinueBtn) roundContinueBtn.addEventListener('click', function(){ continueAfterRoundPause(); });
+  } else if(inPostSeason){
     cardBox.innerHTML =
       '<div class="noc-match-kicker">' + (state.postSeason.stageLabel || 'Post-Stagione') + '</div>' +
       '<div class="noc-match-row">' +
@@ -5872,13 +6049,21 @@ function nocRenderMatchTab(){
       '</div>';
     controlsBox.innerHTML = '<div class="noc-match-line" style="color:#75798c;">Prosegui dalla finestra di risultato.</div>';
   } else if(state.opponent){
+    const oppOffT = TACTICS.find(function(t){ return t.id===state.opponent.tacticOff; });
+    const oppDefT = TACTICS.find(function(t){ return t.id===state.opponent.tacticDef; });
+    const oppTacticLine = (oppOffT || oppDefT)
+      ? '<div class="noc-match-line" style="color:#75798c;font-size:10.5px;text-align:right;margin-top:2px;">' +
+          'Attacco: ' + (oppOffT ? oppOffT.title : '?') + ' · Difesa: ' + (oppDefT ? oppDefT.title : '?') +
+        '</div>'
+      : '';
     cardBox.innerHTML =
       '<div class="noc-match-kicker">PROSSIMO IMPEGNO</div>' +
       '<div class="noc-match-row">' +
         '<div class="noc-match-team">' + state.teamName + '</div>' +
         '<div class="noc-match-score" style="font-size:18px;">vs</div>' +
         '<div class="noc-match-team" style="text-align:right;">' + state.opponent.name + '</div>' +
-      '</div>';
+      '</div>' +
+      oppTacticLine;
     controlsBox.innerHTML =
       '<button type="button" class="noc-btn noc-btn-primary" id="noc-btn-gioca">Gioca</button>' +
       '<button type="button" class="noc-btn noc-btn-secondary" id="noc-btn-auto">' + (state.autoPlay ? 'Pausa' : 'Auto') + '</button>';
@@ -5888,9 +6073,9 @@ function nocRenderMatchTab(){
     if(autoBtn) autoBtn.addEventListener('click', function(){ toggleAutoPlay(); });
   } else if(state.seasonOver){
     cardBox.innerHTML = '<div class="noc-match-kicker">STAGIONE CONCLUSA</div><div class="noc-match-line" style="color:#75798c;margin-top:6px;">Record finale: ' + state.record.w + '-' + state.record.l + '.</div>';
-    controlsBox.innerHTML = '<button type="button" class="noc-btn noc-btn-primary noc-btn-full" id="noc-btn-new-season">Nuova Stagione</button>';
+    controlsBox.innerHTML = '<button type="button" class="noc-btn noc-btn-primary noc-btn-full" id="noc-btn-new-season">Nuova Stagione (Nuovo Draft)</button>';
     const newSeasonBtn = controlsBox.querySelector('#noc-btn-new-season');
-    if(newSeasonBtn) newSeasonBtn.addEventListener('click', function(){ nocRestartSeason(); });
+    if(newSeasonBtn) newSeasonBtn.addEventListener('click', function(){ nocStartNewDraft(); });
   } else {
     cardBox.innerHTML = '<div class="noc-match-kicker">STAGIONE NON ANCORA INIZIATA</div>';
     controlsBox.innerHTML = '';
@@ -6513,7 +6698,8 @@ function teamAvgStat(roster, key){
   return roster.reduce((a,p)=>a+(p[key]||0),0)/roster.length;
 }
 
-function generatePossessionEvents(myRoster, oppRoster, startI, endI, myMods){
+function generatePossessionEvents(myRoster, oppRoster, startI, endI, myMods, oppMods){
+  oppMods = oppMods || {};
   const events=[];
   const myStar = myRoster.reduce((a,b)=> b.ppg>a.ppg ? b : a);
   const oppStar = oppRoster.reduce((a,b)=> b.ppg>a.ppg ? b : a);
@@ -6521,10 +6707,16 @@ function generatePossessionEvents(myRoster, oppRoster, startI, endI, myMods){
     const meOnOffense = i%2===0;
     const offRoster = meOnOffense ? myRoster : oppRoster;
     const defRoster = meOnOffense ? oppRoster : myRoster;
-    const offMods = meOnOffense ? myMods : {moraleF:0, chemF:0, fatF:0};
+    // offenseMods/defenseMods always mean "whoever has the ball this possession" / "the other
+    // side" — CPU opponents now carry their own assigned tactic pair (state.standings[i].tacticOff/
+    // tacticDef, merged into oppMods by startLiveMatch), so this reads symmetrically regardless of
+    // who's on offense, instead of the old model where only myMods ever had any effect.
+    const offenseMods = meOnOffense ? myMods : oppMods;
+    const defenseMods = meOnOffense ? oppMods : myMods;
+    const offMods = offenseMods;
     const offStar = meOnOffense ? myStar : oppStar;
 
-    let stealChance = 0.12 + (meOnOffense ? (myMods.turnoverBonus||0) : (myMods.stealBonus||0));
+    let stealChance = 0.12 + (offenseMods.turnoverBonus||0) + (defenseMods.stealBonus||0);
     stealChance = Math.max(0.03, Math.min(0.35, stealChance));
     if(Math.random() < stealChance){
       const defender = weightedPick(defRoster, p=>(p.spg+0.3)*usageMult(p));
@@ -6534,8 +6726,8 @@ function generatePossessionEvents(myRoster, oppRoster, startI, endI, myMods){
 
     const rawWeights = offRoster.map(p=>{
       let w = (p.ppg+1)*usageMult(p);
-      if(meOnOffense && myMods.isoBonus && p===offStar) w *= (1+myMods.isoBonus);
-      if(meOnOffense && myMods.roleUsageBonus && myMods.roleUsageBonus[p.role]) w *= Math.max(0.25, 1+myMods.roleUsageBonus[p.role]);
+      if(offenseMods.isoBonus && p===offStar) w *= (1+offenseMods.isoBonus);
+      if(offenseMods.roleUsageBonus && offenseMods.roleUsageBonus[p.role]) w *= Math.max(0.25, 1+offenseMods.roleUsageBonus[p.role]);
       return Math.max(0.1, w);
     });
     const totalRaw = rawWeights.reduce((a,b)=>a+b,0);
@@ -6557,9 +6749,8 @@ function generatePossessionEvents(myRoster, oppRoster, startI, endI, myMods){
     let is3chance = BASE_IS3_BY_ROLE[shooter.role] !== undefined ? BASE_IS3_BY_ROLE[shooter.role] : 0.30;
     const shooterTendency = myPlayerTendency(shooter);
     if(shooterTendency) is3chance = Math.max(0.02, Math.min(0.75, is3chance + shooterTendency.is3Delta));
-    if(meOnOffense) is3chance += dampenStack(myMods.is3Bonus||0) + (myMods.is3Penalty||0);
-    else is3chance += (myMods.oppIs3Bonus||0);
-    if(meOnOffense && myMods.roleIs3Bonus) is3chance += (myMods.roleIs3Bonus[shooter.role]||0);
+    is3chance += dampenStack(offenseMods.is3Bonus||0) + (offenseMods.is3Penalty||0) + (defenseMods.oppIs3Bonus||0);
+    if(offenseMods.roleIs3Bonus) is3chance += (offenseMods.roleIs3Bonus[shooter.role]||0);
     is3chance = Math.max(0.02, Math.min(0.65, is3chance));
     const is3 = Math.random() < is3chance;
     const shotValue = is3 ? 3 : 2;
@@ -6575,21 +6766,21 @@ function generatePossessionEvents(myRoster, oppRoster, startI, endI, myMods){
                    + (offMods.moraleF||0) + (offMods.chemF||0) + (offMods.fatF||0);
     if(is3){
       makeProb -= 0.07;
-      if(meOnOffense && myMods.roleIs3Bonus) makeProb += (myMods.roleIs3Bonus[shooter.role]||0);
+      if(offenseMods.roleIs3Bonus) makeProb += (offenseMods.roleIs3Bonus[shooter.role]||0);
       if(!meOnOffense && myMods.oppHotNightBonus) makeProb += myMods.oppHotNightBonus;
     } else {
-      if(meOnOffense) makeProb += dampenStack(myMods.make2Bonus||0);
-      if(meOnOffense && myMods.roleMake2Bonus) makeProb += (myMods.roleMake2Bonus[shooter.role]||0);
+      makeProb += dampenStack(offenseMods.make2Bonus||0);
+      if(offenseMods.roleMake2Bonus) makeProb += (offenseMods.roleMake2Bonus[shooter.role]||0);
       if(!meOnOffense && myMods.oppHotNightBonus) makeProb += myMods.oppHotNightBonus;
     }
-    if(meOnOffense) makeProb += (myMods.makeAllPenalty||0);
-    if(!meOnOffense && !is3) makeProb += (myMods.oppMake2Penalty||0);
+    makeProb += (offenseMods.makeAllPenalty||0);
+    if(!is3) makeProb += (defenseMods.oppMake2Penalty||0);
     makeProb = Math.max(0.22, Math.min(0.72, makeProb));
 
     if(Math.random() < makeProb){
       events.push({team: meOnOffense?'you':'opp', type:'score', cognome:shooter.cognome, value:shotValue});
       const teamAstRate = teamAvgStat(offRoster,'apg') / (LEAGUE_AVG.apg||1);
-      let astChance = 0.35 + Math.min(0.35, teamAstRate*0.20) + (meOnOffense ? dampenStack(myMods.astBonus||0) : 0);
+      let astChance = 0.35 + Math.min(0.35, teamAstRate*0.20) + dampenStack(offenseMods.astBonus||0);
       astChance = Math.max(0.15, Math.min(0.85, astChance));
       if(Math.random() < astChance){
         const passers = offRoster.filter(p=>p.cognome!==shooter.cognome);
@@ -6600,9 +6791,7 @@ function generatePossessionEvents(myRoster, oppRoster, startI, endI, myMods){
         if(passer) events.push({team: meOnOffense?'you':'opp', type:'ast', cognome:passer.cognome});
       }
     } else {
-      let offReboundChance = 0.27;
-      if(meOnOffense) offReboundChance += dampenStack(myMods.rebBonus||0) + (myMods.offRebPenalty||0);
-      else offReboundChance -= dampenStack(myMods.rebBonus||0);
+      let offReboundChance = 0.27 + dampenStack(offenseMods.rebBonus||0) + (offenseMods.offRebPenalty||0) - dampenStack(defenseMods.rebBonus||0);
       offReboundChance = Math.max(0.1, Math.min(0.5, offReboundChance));
       if(Math.random() < offReboundChance){
         const rebounder = weightedPick(offRoster, p=>{
@@ -6810,6 +6999,13 @@ function startLiveMatch(){
     getRtgActiveMods(),
     oppHotNight ? { oppHotNightBonus: 0.12 } : {}
   );
+  // The CPU opponent now brings its own offense+defense tactic pair too (assigned once per club in
+  // startSeason(), stored on its state.standings entry), so every matchup actually plays a bit
+  // differently instead of every team being tactically neutral. RTG/MyPlayer opponents stay neutral
+  // ({}), matching how their own state.tactic side never touches state.tacticDef either.
+  const oppTacticOff = isCareerMode ? (TACTICS.find(t=>t.id===(state.opponent.tacticOff||'balanced')) || TACTICS[0]) : null;
+  const oppTacticDef = isCareerMode ? (TACTICS.find(t=>t.id===(state.opponent.tacticDef||'man')) || null) : null;
+  const oppMods = isCareerMode ? mergeModsAdditive(oppTacticOff.mod, oppTacticDef ? oppTacticDef.mod : {}) : {};
   const possessionsEach = 70 + Math.floor(Math.random()*10) + Math.round((baseMods.paceBonus||0)/2);
 
   const { roster: rosterForMatch, triggeredName } = applyEntraTuttoIfActive(state.roster);
@@ -6819,8 +7015,8 @@ function startLiveMatch(){
   oppRoster.forEach(p=> box.opp[p.cognome] = { pts:0, reb:0, ast:0, stl:0, att2:0, mk2:0, att3:0, mk3:0, role:p.role });
 
   LM = {
-    oppRoster, baseMods, possessionsEach, entraTuttoPlayer: triggeredName, oppHotNight,
-    events: generatePossessionEvents(rosterForMatch, oppRoster, 0, possessionsEach, baseMods).concat([{type:'halftime'}]),
+    oppRoster, baseMods, oppMods, possessionsEach, entraTuttoPlayer: triggeredName, oppHotNight,
+    events: generatePossessionEvents(rosterForMatch, oppRoster, 0, possessionsEach, baseMods, oppMods).concat([{type:'halftime'}]),
     idx:0, scoreYou:0, scoreOpp:0, box,
     timer:null, ballAnimating:false, audioCtx:null
   };
@@ -7292,7 +7488,7 @@ function showLiveHalftimePicker(){
   if(state.myPlayerCognome){
     const t = HALFTIME_OPTIONS[Math.floor(Math.random()*HALFTIME_OPTIONS.length)];
     const combined = { ...LM.baseMods, ...t.mod };
-    const secondHalf = generatePossessionEvents(state.roster, LM.oppRoster, LM.possessionsEach, LM.possessionsEach*2, combined);
+    const secondHalf = generatePossessionEvents(state.roster, LM.oppRoster, LM.possessionsEach, LM.possessionsEach*2, combined, LM.oppMods);
     LM.events = LM.events.concat(secondHalf);
     liveAddChronicle('Il coach cambia qualcosa nello spogliatoio.');
     liveSetSpeed(LM.speed || 1);
@@ -7311,7 +7507,7 @@ function showLiveHalftimePicker(){
     card.addEventListener('click', ()=>{
       toast.classList.remove('show');
       const combined = { ...LM.baseMods, ...t.mod };
-      const secondHalf = generatePossessionEvents(state.roster, LM.oppRoster, LM.possessionsEach, LM.possessionsEach*2, combined);
+      const secondHalf = generatePossessionEvents(state.roster, LM.oppRoster, LM.possessionsEach, LM.possessionsEach*2, combined, LM.oppMods);
       LM.events = LM.events.concat(secondHalf);
       liveAddChronicle('Tattica scelta: ' + t.title + '.');
       liveSetSpeed(LM.speed || 1);
@@ -7913,7 +8109,7 @@ function continuePostSeasonAfterMatch(won){
 
 function maybeAddOvertime(){
   if(LM.scoreYou === LM.scoreOpp){
-    const ot = generatePossessionEvents(state.roster, LM.oppRoster, 0, 20, LM.baseMods); // supplementare breve, ~10 possessi a squadra
+    const ot = generatePossessionEvents(state.roster, LM.oppRoster, 0, 20, LM.baseMods, LM.oppMods); // supplementare breve, ~10 possessi a squadra
     LM.events = LM.events.concat(ot);
     return true;
   }
@@ -7957,7 +8153,7 @@ function skipLiveMatch(){
       const ev = LM.events[LM.idx];
       if(ev.type==='halftime'){
         LM.idx++;
-        const secondHalf = generatePossessionEvents(state.roster, LM.oppRoster, LM.possessionsEach, LM.possessionsEach*2, LM.baseMods);
+        const secondHalf = generatePossessionEvents(state.roster, LM.oppRoster, LM.possessionsEach, LM.possessionsEach*2, LM.baseMods, LM.oppMods);
         LM.events = LM.events.concat(secondHalf);
         continue;
       }
@@ -7986,7 +8182,7 @@ function nextWeek(){
   if(state.week === 18 && !state.midMarketDone){
     state.midMarketDone = true;
     state.budget += 25;
-    runCoppaItalia(()=>{ initWeek(); saveGame(); });
+    runCoppaItalia(()=>{ nocShowMidSeasonTradeOffer(()=>{ initWeek(); saveGame(); }); });
   } else {
     initWeek();
     saveGame();
@@ -8032,6 +8228,48 @@ function computeCurrentStandings(){
   return rows;
 }
 
+/* Supercoppa (per user request, ispirata a "European Nights" di 38-0.app): torneo bonus giocato
+   alla FINE della run, subito dopo l'ultima partita della propria stagione (playoff/playout
+   inclusi), se ci si e' piazzati tra le prime 4 della classifica finale — a differenza della
+   Coppa Italia (a meta' stagione, sulla classifica del momento). Il chiamante (finishPostSeason)
+   gia' verifica la qualificazione, quindi qui non c'e' un ramo "non qualificato": si arriva solo
+   se si e' dentro. Riusa lo stesso schema (2 semifinali + finale via resolveMatch) ma con il
+   proprio flag di stato, separato da state.rtg.wonSupercoppa che e' tutt'altra cosa (il torneo
+   bonus di Road to Glory) — nessuna delle due modalita' tocca l'altra. */
+function runSupercoppa(top4, onDone){
+  state.postSeason = { active:true, resultsLog:[], pendingCallback:null, stageLabel:'', userEliminatedStage:null };
+  resolveMatch(top4[0], top4[3], 'Supercoppa · Semifinale', (w1)=>{
+    resolveMatch(top4[1], top4[2], 'Supercoppa · Semifinale', (w2)=>{
+      resolveMatch(w1, w2, 'Supercoppa · Finale', (champion)=>{
+        state.postSeason.active = false;
+        const won = champion===state.teamName;
+        if(won) state.careerSupercoppaWon = true;
+        showSupercoppaResult(won, champion, onDone);
+      });
+    });
+  });
+}
+function showSupercoppaResult(won, champion, onDone){
+  const modal = document.getElementById('modal-content');
+  modal.classList.remove('live-match'); modal.classList.remove('wide'); modal.classList.add('noc-confirm');
+  let title, message;
+  if(won){
+    title = 'Supercoppa Vinta!';
+    message = state.teamName+' chiude la run alzando la Supercoppa LNP A2!';
+  } else {
+    title = 'Finale Persa';
+    message = champion+' vince la Supercoppa. La tua run finisce qui.';
+  }
+  modal.innerHTML = `
+    <div class="noc-hero-kicker">SUPERCOPPA LNP A2</div>
+    <div class="noc-hero-title" style="font-size:19px;">${title}</div>
+    <div class="noc-hero-sub" style="max-width:none;">${message}</div>
+    <button type="button" class="noc-btn noc-btn-primary noc-btn-full" id="btn-supercoppa-continue" style="margin-top:16.8px;">Continua</button>
+  `;
+  document.getElementById('btn-supercoppa-continue').addEventListener('click', ()=>{ closeModal(); onDone(); });
+  document.getElementById('overlay').classList.add('show');
+}
+
 function runCoppaItalia(onDone){
   const top4 = computeCurrentStandings().slice(0,4).map(t=>t.name);
   const userQualified = top4.includes(state.teamName);
@@ -8069,6 +8307,71 @@ function showCoppaItaliaResult(won, champion, userQualified, onDone){
     <button type="button" class="noc-btn noc-btn-primary noc-btn-full" id="btn-coppa-continue" style="margin-top:16.8px;">Torna al Campionato</button>
   `;
   document.getElementById('btn-coppa-continue').addEventListener('click', ()=>{ closeModal(); onDone(); });
+  document.getElementById('overlay').classList.add('show');
+}
+
+/* Evento di mercato "alla cieca" a meta stagione (settimana 18, Carriera soltanto — mai in
+   RTG/MyPlayer). Un tuo giocatore a caso riceve un'offerta: un giocatore VERO della lega attuale
+   (stesso ruolo, OVR entro ±5 dal tuo), la cui identita' resta nascosta finche' non accetti. Se
+   accetti lo scambio e' immediato e definitivo — nessun modo di tornare indietro, di proposito. */
+function nocShowMidSeasonTradeOffer(onDone){
+  const isCareerMode = !state.myPlayerCognome && !(state.rtg && state.rtg.active);
+  if(!isCareerMode || !state.roster.length){ onDone(); return; }
+
+  // Try every roster player (in random order), not just one fixed random pick: a roster's best
+  // players often have NO real peer left in the league within ±5 OVR once already-owned players
+  // are excluded (a small league pool), so always targeting a single random player made the event
+  // silently skip far too often. Falling through to the next candidate keeps the ±5 rule intact
+  // while actually finding a trade whenever ANY roster spot has one available.
+  const currentExCount = state.roster.filter(p=>p.naz==='EX').length;
+  const rosterKeys = new Set(state.roster.map(p=>p.nome+'|'+p.cognome));
+  let target = null, replacement = null, minOvr = 0, maxOvr = 0;
+  shuffled(state.roster).some(function(candidateTarget){
+    const lo = candidateTarget.ovr - 5, hi = candidateTarget.ovr + 5;
+    const candidates = ALL_PLAYERS.filter(function(p){
+      return (macroRole(p.ruolo1)===candidateTarget.role || macroRole(p.ruolo2)===candidateTarget.role) &&
+        p.ovr>=lo && p.ovr<=hi &&
+        !rosterKeys.has(p.nome+'|'+p.cognome) &&
+        !(p.naz==='EX' && currentExCount>=MAX_EX_PLAYERS);
+    });
+    if(!candidates.length) return false;
+    target = candidateTarget; minOvr = lo; maxOvr = hi;
+    replacement = candidates[Math.floor(Math.random()*candidates.length)];
+    return true;
+  });
+  if(!target){ onDone(); return; }
+
+  const modal = document.getElementById('modal-content');
+  modal.classList.remove('live-match'); modal.classList.remove('wide'); modal.classList.add('noc-confirm');
+  modal.innerHTML = `
+    <div class="noc-hero-kicker">MERCATO DI META STAGIONE</div>
+    <div class="noc-hero-title" style="font-size:19px;">Offerta di scambio per ${target.cognome}</div>
+    <div class="noc-hero-sub" style="max-width:none;">Un club della lega offre un giocatore di ruolo ${target.role}, di livello vicino al tuo (tra ${minOvr} e ${maxOvr} OVR), in cambio di ${target.cognome}. Non saprai chi arriva finché non accetti — e una volta accettato lo scambio è definitivo.</div>
+    <button type="button" class="noc-btn noc-btn-danger noc-btn-full" id="btn-tradeoffer-accept" style="margin-top:16.8px;">Accetta lo scambio (rischio)</button>
+    <button type="button" class="noc-btn noc-btn-secondary noc-btn-full" id="btn-tradeoffer-decline" style="margin-top:8px;">Rifiuta</button>
+  `;
+  document.getElementById('btn-tradeoffer-accept').addEventListener('click', function(){
+    const idx = state.roster.indexOf(target);
+    const wasStarter = target.starter;
+    const newRole = target.role;
+    recordPlayerLeavesClub(target.club, target);
+    recordPlayerJoinsClub(replacement.club, target);
+    recordPlayerLeavesClub(replacement.club, replacement);
+    state.roster[idx] = {
+      nome:replacement.nome, cognome:replacement.cognome, club:replacement.club,
+      role:newRole, naz:replacement.naz||'ITA', ovr:replacement.ovr,
+      ppg:replacement.ppg, apg:replacement.apg, rpg:replacement.rpg, spg:replacement.spg,
+      fatigue:0, traits:[], starter:wasStarter
+    };
+    modal.innerHTML = `
+      <div class="noc-hero-kicker">SCAMBIO CONCLUSO</div>
+      <div class="noc-hero-title" style="font-size:19px;">${replacement.cognome} arriva in squadra</div>
+      <div class="noc-hero-sub" style="max-width:none;">In cambio di ${target.cognome} (OVR ${target.ovr}) arriva ${replacement.cognome} (OVR ${replacement.ovr}) da ${replacement.club}.</div>
+      <button type="button" class="noc-btn noc-btn-primary noc-btn-full" id="btn-tradeoffer-close" style="margin-top:16.8px;">Continua</button>
+    `;
+    document.getElementById('btn-tradeoffer-close').addEventListener('click', function(){ closeModal(); onDone(); });
+  });
+  document.getElementById('btn-tradeoffer-decline').addEventListener('click', function(){ closeModal(); onDone(); });
   document.getElementById('overlay').classList.add('show');
 }
 
