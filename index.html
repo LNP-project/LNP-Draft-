@@ -827,6 +827,12 @@ body{
   color:var(--text-muted);text-transform:uppercase;margin:10px 0 4px;
   border-top:1px dashed var(--border);padding-top:8px;
 }
+.role-group-label{
+  font-family:'Oswald',sans-serif;font-size:0.62rem;letter-spacing:1px;
+  color:var(--gold);text-transform:uppercase;margin:10px 0 4px;
+  display:flex;align-items:center;gap:6px;
+}
+.role-group-label .role-group-count{ color:var(--text-muted); font-weight:400; letter-spacing:0; }
 .starter-toggle{
   background:none;border:none;color:var(--gold);font-size:1.1rem;cursor:pointer;
   padding:0;line-height:1;
@@ -1656,7 +1662,7 @@ body{
 .noc-pcard-closed .noc-ball{ opacity:.5; }
 .noc-pcard-head{ display:flex; justify-content:space-between; padding:8.4px 9.8px; }
 .noc-pcard-rarity{ font:600 8.5px/1 'Inter',sans-serif; text-transform:uppercase; letter-spacing:.06em; }
-.noc-pcard-role{ font-size:9px; color:rgba(233,233,237,.55); display:flex; align-items:center; gap:5px; }
+.noc-pcard-role{ font:700 9.5px/1 'Inter',sans-serif; letter-spacing:.03em; color:#fff; display:flex; align-items:center; gap:5px; padding:3.5px 7px; border-radius:99px; text-shadow:0 1px 1px rgba(0,0,0,.35); }
 .noc-pcard-ex-badge{ font:700 8px/1 'Inter',sans-serif; letter-spacing:.04em; color:#1a1408; background:#e3af35; border-radius:4px; padding:2px 4px; }
 .noc-pcard-body{ flex:1; position:relative; display:flex; align-items:flex-end; justify-content:center; overflow:hidden; }
 .noc-pcard-watermark{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:64px; font-weight:700; color:rgba(233,233,237,.07); }
@@ -1742,6 +1748,8 @@ body{
 #noc-panel-rosa .fatigue-bar-mini span, #noc-club-empty .fatigue-bar-mini span{ display:block; height:100%; background:linear-gradient(90deg,#5d5294,#b5abfc); }
 #noc-panel-rosa .starter-toggle, #noc-club-empty .starter-toggle{ margin-left:auto; background:none; border:none; color:#b5abfc; font-size:18px; cursor:pointer; flex:none; }
 #noc-panel-rosa .bench-label, #noc-club-empty .bench-label{ font-size:10.5px; color:#75798c; text-transform:uppercase; letter-spacing:.06em; margin:8px 0 2px; }
+#noc-panel-rosa .role-group-label, #noc-club-empty .role-group-label{ font-size:10.5px; font-weight:700; color:#b5abfc; text-transform:uppercase; letter-spacing:.06em; margin:10px 0 4px; display:flex; align-items:center; gap:6px; }
+#noc-panel-rosa .role-group-label .role-group-count, #noc-club-empty .role-group-label .role-group-count{ color:#75798c; font-weight:400; }
 #noc-panel-rosa .player-traits, #noc-club-empty .player-traits{ display:none; }
 #noc-panel-rosa .roster-message, #noc-club-empty .roster-message{ font-size:11.5px; color:#b5afe8; min-height:0; }
 #noc-panel-rosa .roster-message:empty, #noc-club-empty .roster-message:empty{ display:none; }
@@ -2610,6 +2618,10 @@ const NOC_RARITY_LABEL = {
 };
 const NOC_WOW_RARITIES = { epic:true, legendary:true };
 const NOC_ROLE_LABEL = { G:'Guardia', F:'Ala', C:'Centro' };
+// Stessi colori per ruolo gia' usati altrove nell'app (role-accent-G/F/C, role-eyebrow-G/F/C:
+// var(--teal)/var(--gold)/var(--crimson)) — riusati qui per rendere il ruolo sulle carte pacchetto
+// una pillola piena e leggibile invece di testo quasi invisibile in alto a destra.
+const NOC_ROLE_COLOR = { G:'#1e5fd6', F:'#ff6b1a', C:'#d6524a' };
 const NOC_SHOP_LABEL_TO_CLASS = { 'COMUNE':'noc-rar-common', 'NON COMUNE':'noc-rar-rare', 'RARA':'noc-rar-epic', 'ULTRA':'noc-rar-legendary' };
 const NOC_SHOP_LABEL_TO_NOCLABEL = { 'COMUNE':'COMUNE', 'NON COMUNE':'SPECIAL', 'RARA':'ELITE', 'ULTRA':'LEGGENDA' };
 const NOC_SHOP_WOW_LABELS = { 'RARA':true, 'ULTRA':true };
@@ -2708,13 +2720,15 @@ const NOC_BLOCKED_LABELS = { 'ex-limit':'Limite EX', 'role-full':'Ruolo completo
 function nocPlayerCardFace(cand){
   const p = cand.player;
   const rarLabel = NOC_RARITY_LABEL[cand.rarity] || 'COMUNE';
-  const roleLabel = NOC_ROLE_LABEL[cand.slotRole] || NOC_ROLE_LABEL[p.role] || NOC_ROLE_LABEL[typeof macroRole==='function' ? macroRole(p.ruolo1) : null] || '';
+  const roleKey = cand.slotRole || p.role || (typeof macroRole==='function' ? macroRole(p.ruolo1) : null);
+  const roleLabel = NOC_ROLE_LABEL[roleKey] || '';
+  const roleColor = NOC_ROLE_COLOR[roleKey] || '#5c5783';
   const exBadge = p.naz==='EX' ? '<span class="noc-pcard-ex-badge">EX</span>' : '';
   const btnLabel = cand.blocked ? (NOC_BLOCKED_LABELS[cand.blockedReason] || 'Limite EX') : 'Seleziona';
   return (
     '<div class="noc-pcard-head">' +
       '<span class="noc-pcard-rarity" style="color:var(--rc-text);">' + rarLabel + '</span>' +
-      '<span class="noc-pcard-role">' + roleLabel + exBadge + '</span>' +
+      '<span class="noc-pcard-role" style="background:' + roleColor + ';">' + roleLabel + exBadge + '</span>' +
     '</div>' +
     '<div class="noc-pcard-body">' +
       '<span class="noc-pcard-watermark">' + nocInitials(p.nome, p.cognome) + '</span>' +
@@ -5035,8 +5049,8 @@ function clubRosterForInstant(name){
 }
 
 function simulateInstantMatch(nameA, nameB){
-  const rosterA = clubRosterForInstant(nameA);
-  const rosterB = clubRosterForInstant(nameB);
+  const rosterA = applyFormMods(clubRosterForInstant(nameA));
+  const rosterB = applyFormMods(clubRosterForInstant(nameB));
   const totalPoss = (70 + Math.floor(Math.random()*10)) * 2;
   let events = generatePossessionEvents(rosterA, rosterB, 0, totalPoss, {});
   function sumScores(evs){
@@ -5331,10 +5345,24 @@ function randomTacticId(type){
 }
 
 function startSeason(){
+  // The Career draft wizard's roster-review step (nocRenderWizardReview) points renderRoster() at
+  // its own throwaway container ('noc-wiz-roster-box') via setRosterTarget(), and nothing ever
+  // pointed it back — so once the real season started, renderRoster() kept rendering into a
+  // container that no longer existed, leaving the real Rosa tab's roster box permanently empty
+  // (only the "TATTICHE ATTUALI" block above it, which isn't rendered by renderRoster(), still
+  // showed). Restoring the default target here, exactly like RTG's rtgConfirmRoster() already does.
+  setRosterTarget('roster-box', 'roster-message');
   state.phase='hub';
   state.autoPlay = false;
   state.matchFeed = [];
   state.seasonOver = false;
+  // Forma della run: solo Carriera (mai RTG/MyPlayer, che non toccano mai state.playerFormMods e
+  // quindi restano bit-per-bit come prima — applyFormMods() e' un no-op quando questo e' null).
+  // Tirata su TUTTA la lega attualmente attiva (ALL_PLAYERS gia' punta al girone/campionato scelto
+  // a questo punto), cosi' varia run dopo run anche la forza delle squadre avversarie, non solo la
+  // tua rosa.
+  const isCareerModeForForm = !state.myPlayerCognome && !(state.rtg && state.rtg.active);
+  state.playerFormMods = isCareerModeForForm ? rollLeagueFormMods(ALL_PLAYERS) : null;
   if(profile.pendingCreditsBonus>0){
     state.budget += profile.pendingCreditsBonus;
     profile.pendingCreditsBonus = 0;
@@ -6460,6 +6488,7 @@ function flashRosterMessage(text){
 
 function renderRoster(){
   const box=document.getElementById(ROSTER_BOX_TARGET);
+  if(!box) return; // il target puo' puntare a un container gia' smontato (es. uno step del wizard concluso): non provare a scrivere in un elemento che non esiste piu'
   box.innerHTML='';
   const starters = state.roster.filter(p=>p.starter);
   const bench = state.roster.filter(p=>!p.starter);
@@ -6536,13 +6565,29 @@ function renderRoster(){
     });
     box.appendChild(row);
   }
-  starters.forEach(renderRow);
+  // Raggruppati per ruolo (con intestazione) invece che nell'ordine di pick/scambio: dopo uno
+  // scambio la posizione di un giocatore nell'array state.roster non riflette piu' il modulo
+  // scelto (es. 3-1-1 puo' finire per apparire come G-F-G-C-G) — qui invece l'ordine visivo e'
+  // sempre raggruppato per ruolo, quindi resta leggibile "a prova di scemo" qualunque scambio si
+  // sia fatto.
+  function renderRoleGroup(players){
+    ['G','F','C'].forEach(function(role){
+      const group = players.filter(function(p){ return p.role===role; });
+      if(!group.length) return;
+      const header = document.createElement('div');
+      header.className = 'role-group-label';
+      header.innerHTML = (DRAFT_ROLE_LABELS_PLURAL[role]||role) + ' <span class="role-group-count">' + group.length + '</span>';
+      box.appendChild(header);
+      group.forEach(renderRow);
+    });
+  }
+  renderRoleGroup(starters);
   if(bench.length){
     const label=document.createElement('div');
     label.className='bench-label';
     label.textContent='Panchina — trascina un giocatore su un titolare dello stesso ruolo per scambiarli';
     box.appendChild(label);
-    bench.forEach(renderRow);
+    renderRoleGroup(bench);
   }
 }
 
@@ -6696,6 +6741,51 @@ function weightedPick(players, weightFn){
 function teamAvgStat(roster, key){
   if(!roster || !roster.length) return 0;
   return roster.reduce((a,p)=>a+(p[key]||0),0)/roster.length;
+}
+
+/* ============ FORMA DELLA RUN (varianza invisibile stagione su stagione) ============
+   Su richiesta dell'utente: senza questo, un giocatore chiude sempre con la stessa media a fine
+   stagione, run dopo run, perche' generatePossessionEvents pesca tiri/percentuali/rimbalzi/assist
+   direttamente da ppg/apg/rpg/spg (mai da ovr) e quei campi sono fissi nel dataset. Qui si tira,
+   UNA SOLA VOLTA per giocatore all'inizio della run (in startSeason(), solo Carriera — mai
+   RTG/MyPlayer), un fattore moltiplicativo raro-ma-marcato invece di un rumore piatto uguale per
+   tutti: la maggior parte dei giocatori resta quasi se stessa, pochi vivono una stagione storta o
+   di grazia. Il numero MOSTRATO (carte, rosa, tabellino) resta sempre quello vero — solo la
+   simulazione legge il valore corretto, tramite applyFormMods() applicato al roster subito prima
+   di ogni chiamata a generatePossessionEvents, MAI scrivendo sopra i valori originali del roster. */
+function rollPlayerFormFactor(){
+  const r = Math.random();
+  if(r < 0.05) return 0.55 + Math.random()*0.15;   // Stagione Storta: -45% / -30%
+  if(r < 0.15) return 1.25 + Math.random()*0.25;    // Stagione di Grazia: +25% / +50%
+  if(r < 0.23) return 0.85 + Math.random()*0.08;    // lieve intesa negativa: -15% / -7%
+  if(r < 0.32) return 1.08 + Math.random()*0.08;    // lieve intesa positiva: +8% / +16%
+  return 0.96 + Math.random()*0.08;                 // normale: -4% / +4%
+}
+
+function rollLeagueFormMods(playerPool){
+  const mods = {};
+  (playerPool||[]).forEach(function(p){ mods[p.cognome] = rollPlayerFormFactor(); });
+  return mods;
+}
+
+function effectivePlayerStats(p){
+  const mods = state.playerFormMods;
+  const factor = mods ? mods[p.cognome] : undefined;
+  if(factor===undefined || factor===1) return p;
+  return Object.assign({}, p, {
+    ppg: Math.max(0.3, Math.round(p.ppg*factor*10)/10),
+    apg: Math.max(0.1, Math.round(p.apg*factor*10)/10),
+    rpg: Math.max(0.2, Math.round(p.rpg*factor*10)/10),
+    spg: Math.max(0.1, Math.round(p.spg*factor*10)/10)
+  });
+}
+
+// Da chiamare SEMPRE appena prima di passare un roster a generatePossessionEvents (mai altrove):
+// se state.playerFormMods non e' stato popolato (RTG/MyPlayer, o Carriera prima che la stagione
+// parta) restituisce il roster originale intatto, quindi e' un no-op sicuro per quelle modalita'.
+function applyFormMods(roster){
+  if(!state.playerFormMods) return roster;
+  return roster.map(effectivePlayerStats);
 }
 
 function generatePossessionEvents(myRoster, oppRoster, startI, endI, myMods, oppMods){
@@ -6978,7 +7068,11 @@ function applyEntraTuttoIfActive(roster){
 }
 
 function startLiveMatch(){
-  const oppRoster = buildOppRoster(state.opponent.name);
+  // applyFormMods() qui e sotto (su rosterForMatch) e' un no-op fuori Carriera (state.playerFormMods
+  // resta null per RTG/MyPlayer) — wrappando UNA volta qui, tutte le chiamate successive a
+  // generatePossessionEvents per QUESTA partita (secondo tempo, supplementare, skip) leggono da
+  // LM.oppRoster/LM.myRoster, gia' aggiustati, senza doverlo rifare a ogni call site.
+  const oppRoster = applyFormMods(buildOppRoster(state.opponent.name));
   const tactic = TACTICS.find(t=>t.id===state.tactic) || TACTICS[0];
   // Offensive + defensive tactics apply together, but only in Carriera — RTG/MyPlayer keep their
   // own single-slot state.tactic untouched (they never set state.tacticDef, so this is always a
@@ -7008,14 +7102,15 @@ function startLiveMatch(){
   const oppMods = isCareerMode ? mergeModsAdditive(oppTacticOff.mod, oppTacticDef ? oppTacticDef.mod : {}) : {};
   const possessionsEach = 70 + Math.floor(Math.random()*10) + Math.round((baseMods.paceBonus||0)/2);
 
-  const { roster: rosterForMatch, triggeredName } = applyEntraTuttoIfActive(state.roster);
+  const { roster: entraTuttoRoster, triggeredName } = applyEntraTuttoIfActive(state.roster);
+  const rosterForMatch = applyFormMods(entraTuttoRoster);
 
   const box = { my:{}, opp:{} };
   state.roster.forEach(p=> box.my[p.cognome] = { pts:0, reb:0, ast:0, stl:0, att2:0, mk2:0, att3:0, mk3:0, role:p.role });
   oppRoster.forEach(p=> box.opp[p.cognome] = { pts:0, reb:0, ast:0, stl:0, att2:0, mk2:0, att3:0, mk3:0, role:p.role });
 
   LM = {
-    oppRoster, baseMods, oppMods, possessionsEach, entraTuttoPlayer: triggeredName, oppHotNight,
+    oppRoster, myRoster: rosterForMatch, baseMods, oppMods, possessionsEach, entraTuttoPlayer: triggeredName, oppHotNight,
     events: generatePossessionEvents(rosterForMatch, oppRoster, 0, possessionsEach, baseMods, oppMods).concat([{type:'halftime'}]),
     idx:0, scoreYou:0, scoreOpp:0, box,
     timer:null, ballAnimating:false, audioCtx:null
@@ -7488,7 +7583,7 @@ function showLiveHalftimePicker(){
   if(state.myPlayerCognome){
     const t = HALFTIME_OPTIONS[Math.floor(Math.random()*HALFTIME_OPTIONS.length)];
     const combined = { ...LM.baseMods, ...t.mod };
-    const secondHalf = generatePossessionEvents(state.roster, LM.oppRoster, LM.possessionsEach, LM.possessionsEach*2, combined, LM.oppMods);
+    const secondHalf = generatePossessionEvents(LM.myRoster, LM.oppRoster, LM.possessionsEach, LM.possessionsEach*2, combined, LM.oppMods);
     LM.events = LM.events.concat(secondHalf);
     liveAddChronicle('Il coach cambia qualcosa nello spogliatoio.');
     liveSetSpeed(LM.speed || 1);
@@ -7507,7 +7602,7 @@ function showLiveHalftimePicker(){
     card.addEventListener('click', ()=>{
       toast.classList.remove('show');
       const combined = { ...LM.baseMods, ...t.mod };
-      const secondHalf = generatePossessionEvents(state.roster, LM.oppRoster, LM.possessionsEach, LM.possessionsEach*2, combined, LM.oppMods);
+      const secondHalf = generatePossessionEvents(LM.myRoster, LM.oppRoster, LM.possessionsEach, LM.possessionsEach*2, combined, LM.oppMods);
       LM.events = LM.events.concat(secondHalf);
       liveAddChronicle('Tattica scelta: ' + t.title + '.');
       liveSetSpeed(LM.speed || 1);
@@ -8109,7 +8204,7 @@ function continuePostSeasonAfterMatch(won){
 
 function maybeAddOvertime(){
   if(LM.scoreYou === LM.scoreOpp){
-    const ot = generatePossessionEvents(state.roster, LM.oppRoster, 0, 20, LM.baseMods, LM.oppMods); // supplementare breve, ~10 possessi a squadra
+    const ot = generatePossessionEvents(LM.myRoster, LM.oppRoster, 0, 20, LM.baseMods, LM.oppMods); // supplementare breve, ~10 possessi a squadra
     LM.events = LM.events.concat(ot);
     return true;
   }
@@ -8153,7 +8248,7 @@ function skipLiveMatch(){
       const ev = LM.events[LM.idx];
       if(ev.type==='halftime'){
         LM.idx++;
-        const secondHalf = generatePossessionEvents(state.roster, LM.oppRoster, LM.possessionsEach, LM.possessionsEach*2, LM.baseMods, LM.oppMods);
+        const secondHalf = generatePossessionEvents(LM.myRoster, LM.oppRoster, LM.possessionsEach, LM.possessionsEach*2, LM.baseMods, LM.oppMods);
         LM.events = LM.events.concat(secondHalf);
         continue;
       }
