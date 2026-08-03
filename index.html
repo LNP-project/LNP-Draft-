@@ -6198,6 +6198,7 @@ function nocEnsureShell(){
     '<div class="noc-stagione-sub" id="noc-sub-partite">' +
       '<div class="noc-match-card" id="noc-match-card"></div>' +
       '<div class="noc-match-controls" id="noc-match-controls" style="margin-top:11.2px;"></div>' +
+      '<div id="noc-skip-season-wrap"></div>' +
       '<div class="noc-results-label" style="margin-top:16.8px;">ULTIMI RISULTATI</div>' +
       '<div id="noc-results-list"></div>' +
     '</div>' +
@@ -6521,13 +6522,22 @@ function nocRenderMatchTab(){
 
   // "Salta a Fine Stagione" — pensato per i test (verificare la varianza della forma della run senza
   // giocare 38 giornate + playoff a mano ogni volta), ma resta un bottone normale sempre disponibile
-  // finche' la stagione e' in corso, playoff/Coppa Italia/Supercoppa inclusi.
+  // finche' la stagione e' in corso, playoff/Coppa Italia/Supercoppa inclusi. Vive nel suo wrapper
+  // dedicato (sotto #noc-match-controls, non dentro) invece che appeso dentro la riga flex di
+  // Gioca/Auto: li' dentro un bottone noc-btn-full non riusciva davvero a diventare largo quanto la
+  // riga (i flex item non ereditano width:100% dal genitore) e il testo lungo faceva straboccare
+  // l'intera riga sullo schermo del telefono.
+  const skipSeasonWrap = document.getElementById('noc-skip-season-wrap');
   const canSkipSeason = !state.seasonOver && (state.opponent || (state.postSeason && state.postSeason.active));
-  if(canSkipSeason){
-    controlsBox.innerHTML += '<button type="button" class="noc-btn noc-btn-secondary noc-btn-full" id="noc-btn-skip-season" style="margin-top:8px;" ' +
-      (nocSkipSeasonActive ? 'disabled' : '') + '>' + (nocSkipSeasonActive ? 'Sto saltando alla fine…' : 'Salta a Fine Stagione (test)') + '</button>';
-    const skipBtn = controlsBox.querySelector('#noc-btn-skip-season');
-    if(skipBtn) skipBtn.addEventListener('click', function(){ nocSkipToEndOfSeason(); });
+  if(skipSeasonWrap){
+    if(canSkipSeason){
+      skipSeasonWrap.innerHTML = '<button type="button" class="noc-btn noc-btn-secondary noc-btn-full" id="noc-btn-skip-season" style="margin-top:8px;" ' +
+        (nocSkipSeasonActive ? 'disabled' : '') + '>' + (nocSkipSeasonActive ? 'Sto saltando alla fine…' : 'Salta a Fine Stagione (test)') + '</button>';
+      const skipBtn = skipSeasonWrap.querySelector('#noc-btn-skip-season');
+      if(skipBtn) skipBtn.addEventListener('click', function(){ nocSkipToEndOfSeason(); });
+    } else {
+      skipSeasonWrap.innerHTML = '';
+    }
   }
 
   if(!resultsList) return;
