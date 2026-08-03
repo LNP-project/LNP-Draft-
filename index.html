@@ -1724,6 +1724,8 @@ body{
 .noc-recap-tile-value.positive{ color:#7ed957; }
 .noc-recap-tile-value.negative{ color:#e2542d; }
 .noc-recap-tile-sub{ font-size:10.5px; color:#75798c; margin-top:2px; }
+.noc-eos-log{ display:flex; flex-direction:column; gap:4px; }
+.noc-eos-log-row{ font-size:11px; color:#9397ab; background:#232532; border-radius:6px; padding:7px 10px; box-shadow:0 0 0 1px #3f424d; }
 
 @media (max-width:380px){ .noc-slot{ width:82px; } }
 
@@ -3199,6 +3201,11 @@ function nocShowEndOfSeason(data){
       '<div class="noc-section-title" style="margin-bottom:8px;">Run Recap</div>' +
       nocRunRecapHtml(mvp, computeRunRecap()) +
     '</div>' +
+    '<div>' +
+      '<div class="noc-section-title" style="margin-bottom:8px;">Coppe</div>' +
+      nocCupsRecapHtml() +
+    '</div>' +
+    nocPlayoffPathHtml(data.resultsLog) +
     nocPlayerAveragesHtml() +
     '<div class="noc-eos-summary">Record finale: <b>' + state.record.w + '-' + state.record.l + '</b></div>' +
     '<button type="button" class="noc-btn noc-btn-primary noc-btn-full" id="noc-eos-cta">Incassa e vai allo shop</button>' +
@@ -3614,7 +3621,15 @@ const TACTICS = [
   { id:'heroball', type:'off', title:'Hero Ball / Iso-Heavy', icon:'star', desc:"Palla al giocatore piu talentuoso, gli altri quattro si spaziano: si affida tutto all'uno contro uno.", mod:{ isoBonus:3, astBonus:-0.02, makeAllPenalty:-0.006 } },
   { id:'zone', type:'def', title:'Difesa a Zona (2-3)', icon:'shield', desc:'Abbassa la percentuale da 2 avversaria, ma concede piu tentativi da 3.', mod:{ oppIs3Bonus:0.07, oppMake2Penalty:-0.03 } },
   { id:'man', type:'def', title:'Difesa a Uomo', icon:'shield', desc:'Marcatura diretta su ogni giocatore, equilibrata: nessun bonus o malus particolare.', mod:{} },
-  { id:'fullcourt', type:'def', title:'Uomo a Tutto Campo', icon:'run', desc:'Pressione dal primo palleggio per stancare e forzare palle perse, ma concede canestri facili in transizione.', mod:{ stealBonus:0.04, pressureBonus:0.03, oppIs3Bonus:0.03 } },
+  // Rubate/pressione erano sproporzionate rispetto al contraccambio (oppIs3Bonus): generavano
+  // extra possessi che qualsiasi attacco efficiente convertiva, creando una sinergia fuori scala
+  // (verificato via simulazione: 5out+fullcourt arrivava al 62-66% di win rate su un roster
+  // sfavorito, contro il 44.5% di baseline — segnalato dall'utente come "overpowered" dopo essere
+  // arrivato 3° con un quintetto proiettato a meta' classifica). Ribilanciato tagliando la fonte
+  // dei possessi extra (stealBonus/pressureBonus) invece di alzare solo oppIs3Bonus, che nei test
+  // pesava poco come contropartita reale. Con i nuovi valori la stessa combo torna al 51.5%-53.5%
+  // qualunque attacco ci si abbini — fullcourt resta un vantaggio vero, non piu' uno sbilanciamento.
+  { id:'fullcourt', type:'def', title:'Uomo a Tutto Campo', icon:'run', desc:'Pressione dal primo palleggio per stancare e forzare palle perse, ma concede canestri facili in transizione.', mod:{ stealBonus:0.025, pressureBonus:0.02, oppIs3Bonus:0.05 } },
   { id:'doubleteam', type:'def', title:'Raddoppi Continui', icon:'users', desc:'Raddoppia sempre il miglior marcatore avversario: forza palle perse ma lascia scoperti i tiratori.', mod:{ stealBonus:0.05, oppIs3Bonus:0.08 } }
 ];
 
@@ -5464,6 +5479,48 @@ function nocRunRecapHtml(mvp, recap){
   return mvpBlock + '<div class="noc-recap-grid">' + gamesTile + streakTile + winTile + lossTile + '</div>';
 }
 
+/* Coppa Italia e Supercoppa non hanno MAI una schermata riassuntiva propria: durante "Salta a Fine
+   Stagione" i loro popup di risultato (showCoppaItaliaResult/showSupercoppaResult) tornano subito
+   senza mostrarsi, e anche fuori dallo skip non restava alcuna traccia a fine stagione di come
+   erano andate — solo un flag booleano (coppaItaliaWon) che confondeva "eliminato" con "non
+   qualificato". state.coppaItaliaRecap/state.supercoppaRecap (impostati da runCoppaItalia/
+   runSupercoppa) portano lo stato reale fino a qui. */
+const NOC_CUP_STATUS_LABEL = { won:'Vinta', eliminated:'Eliminato', 'not-qualified':'Non Qualificato' };
+function nocCupTileHtml(title, recap){
+  recap = recap || { status:'not-qualified' };
+  const label = NOC_CUP_STATUS_LABEL[recap.status] || 'N/D';
+  const cls = recap.status==='won' ? ' positive' : (recap.status==='eliminated' ? ' negative' : '');
+  const stageSub = recap.stage ? recap.stage.replace(/^(Coppa Italia|Supercoppa)\s*·\s*/, '') : '';
+  return (
+    '<div class="noc-recap-tile">' +
+      '<div class="noc-recap-tile-label">' + title + '</div>' +
+      '<div class="noc-recap-tile-value' + cls + '">' + label + '</div>' +
+      (stageSub ? '<div class="noc-recap-tile-sub">' + stageSub + '</div>' : '') +
+    '</div>'
+  );
+}
+function nocCupsRecapHtml(){
+  return '<div class="noc-recap-grid">' +
+    nocCupTileHtml('Coppa Italia', state.coppaItaliaRecap) +
+    nocCupTileHtml('Supercoppa', state.supercoppaRecap) +
+  '</div>';
+}
+
+/* Cammino del tabellone di fine stagione (playoff/playout) — i dati c'erano gia' da tempo
+   (state.postSeason.resultsLog, passato come data.resultsLog) ma non venivano mai renderizzati da
+   nessuna parte: soprattutto con lo skip attivo, dove nessuna partita del tabellone si vede dal
+   vivo, era l'unico modo per sapere davvero come si e' arrivati al piazzamento finale. */
+function nocPlayoffPathHtml(resultsLog){
+  const rows = (resultsLog||[]).filter(function(line){ return typeof line === 'string' && line.length; });
+  if(!rows.length) return '';
+  return (
+    '<div>' +
+      '<div class="noc-section-title" style="margin-bottom:8px;">Cammino Playoff</div>' +
+      '<div class="noc-eos-log">' + rows.map(function(line){ return '<div class="noc-eos-log-row">' + line + '</div>'; }).join('') + '</div>' +
+    '</div>'
+  );
+}
+
 function finishPostSeason(message, outcome){
   state.postSeason.active = false;
   // Nothing else resets state.opponent once the season is over, so without clearing it the
@@ -5520,6 +5577,7 @@ function finishPostSeason(message, outcome){
   if(top4.length>=4 && top4.includes(state.teamName)){
     runSupercoppa(top4, wrapUpSeason);
   } else {
+    state.supercoppaRecap = { status:'not-qualified' };
     wrapUpSeason();
   }
 }
@@ -5643,6 +5701,26 @@ function randomTacticId(type){
   return pool[Math.floor(Math.random()*pool.length)].id;
 }
 
+// Prima ogni club CPU pescava la propria tattica in modo uniforme, senza alcun legame con la sua
+// forza (c.power): una squadra di fondo classifica aveva la stessa probabilita' di un club di
+// vertice di uscire con uno schema aggressivo/estremo, il che rendeva la lega tatticamente piatta
+// (segnalato dall'utente: "arrivare in top 4 sembra facile"). "safe" = schemi neutri o dal
+// compromesso mite (balanced/man restano a mod:{}), "aggressive" = schemi piu estremi/rischiosi con
+// bonus piu marcati. I club forti pescano piu spesso da "aggressive", quelli deboli restano piu
+// spesso su "safe" — ma resta sempre possibile il contrario, per non rendere la lega prevedibile.
+const TACTIC_TIER = {
+  balanced:'safe', pnr:'safe', motion:'safe', man:'safe', zone:'safe',
+  rungun:'aggressive', '7sec':'aggressive', smallball:'aggressive', doublebig:'aggressive',
+  '5out':'aggressive', heroball:'aggressive', fullcourt:'aggressive', doubleteam:'aggressive'
+};
+function randomTacticIdWeighted(type, aggressiveChance){
+  const pool = TACTICS.filter(t=>t.type===type);
+  const wantTier = Math.random() < aggressiveChance ? 'aggressive' : 'safe';
+  const tiered = pool.filter(t=> (TACTIC_TIER[t.id]||'safe') === wantTier);
+  const finalPool = tiered.length ? tiered : pool;
+  return finalPool[Math.floor(Math.random()*finalPool.length)].id;
+}
+
 function startSeason(){
   // The Career draft wizard's roster-review step (nocRenderWizardReview) points renderRoster() at
   // its own throwaway container ('noc-wiz-roster-box') via setRosterTarget(), and nothing ever
@@ -5678,11 +5756,19 @@ function startSeason(){
   // Each club gets its own offense+defense tactic pair for the season (any tactic, not gated by
   // the user's own profile.unlockedTactics — that unlock list is a player-facing reward, not a
   // simulation constraint), so matches actually feel different depending on who you're facing
-  // instead of every CPU team being tactically neutral.
-  state.standings = opponentClubs.map(c=>({
-    name:c.name, power:c.power, w:0, l:0,
-    tacticOff: randomTacticId('off'), tacticDef: randomTacticId('def')
-  }));
+  // instead of every CPU team being tactically neutral. Pesata per forza (vedi randomTacticIdWeighted):
+  // i club forti pescano piu' spesso schemi aggressivi, quelli deboli restano piu' spesso su schemi
+  // neutri — 25%-75% di probabilita' "aggressive" in base al percentile di power in questa lega.
+  const clubPowers = opponentClubs.map(c=>c.power);
+  const minClubPower = Math.min.apply(null, clubPowers), maxClubPower = Math.max.apply(null, clubPowers);
+  state.standings = opponentClubs.map(c=>{
+    const powerPct = maxClubPower>minClubPower ? (c.power-minClubPower)/(maxClubPower-minClubPower) : 0.5;
+    const aggressiveChance = 0.25 + powerPct*0.5;
+    return {
+      name:c.name, power:c.power, w:0, l:0,
+      tacticOff: randomTacticIdWeighted('off', aggressiveChance), tacticDef: randomTacticIdWeighted('def', aggressiveChance)
+    };
+  });
   state.schedule = buildFullSchedule(opponentClubs.map(c=>c.name));
   document.getElementById('draft-screen').classList.add('hidden');
   document.getElementById('career-roster-review-screen').classList.add('hidden');
@@ -6388,7 +6474,11 @@ function nocRenderDailyMissions(){
 }
 
 function nocStandingsRows(){
-  const rows = [].concat(state.standings||[], [{ name:state.teamName, w:state.record.w, l:state.record.l, isMe:true }]);
+  // state.teamName e' il nome digitato dall'utente (mostrato in classifica), ma CLUB_LOGOS e'
+  // indicizzato sui nomi REALI dei club — senza "club" a parte, clubLogoImg(r.name,...) cercava il
+  // logo sotto il nome custom e non lo trovava mai, lasciando la propria riga senza logo mentre
+  // tutte le altre (nomi reali) ce l'avevano.
+  const rows = [].concat(state.standings||[], [{ name:state.teamName, club:state.chosenClub, w:state.record.w, l:state.record.l, isMe:true }]);
   rows.sort(function(a,b){ return b.w-a.w || a.l-b.l; });
   return rows;
 }
@@ -6411,7 +6501,7 @@ function nocRenderStandingsTable(){
         '<div class="noc-standings-row'+(r.isMe?' me':'')+'">' +
           '<span class="noc-pos'+(pos<=playoffLine?' playoff':'')+'">'+pos+'</span>' +
           '<span style="display:flex;align-items:center;gap:6px;min-width:0;">' +
-            clubLogoImg(r.name, 18) +
+            clubLogoImg(r.club || r.name, 18) +
             '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+r.name+'</span>' +
           '</span>' +
           '<span>'+r.w+'</span><span>'+r.l+'</span><span>'+(r.w*2+ (r.l*0))+'</span>' +
@@ -6439,7 +6529,7 @@ function nocRenderTopPlayersTable(){
           '<span class="noc-pos">'+(i+1)+'</span>' +
           '<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+p.cognome+'</span>' +
           '<span style="display:flex;align-items:center;gap:4px;min-width:0;">' +
-            clubLogoImg(p.club, 14) +
+            clubLogoImg(isMe ? state.chosenClub : p.club, 14) +
             '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+p.club+'</span>' +
           '</span>' +
           '<span>'+(p[nocTopPlayersStat]||0).toFixed(1)+'</span>' +
@@ -7616,7 +7706,8 @@ function startLiveMatch(){
     oppRoster, myRoster: rosterForMatch, baseMods, oppMods, possessionsEach, entraTuttoPlayer: triggeredName, oppHotNight,
     events: generatePossessionEvents(rosterForMatch, oppRoster, 0, possessionsEach, baseMods, oppMods).concat([{type:'halftime'}]),
     idx:0, scoreYou:0, scoreOpp:0, box,
-    timer:null, ballAnimating:false, audioCtx:null
+    timer:null, ballAnimating:false, audioCtx:null,
+    isCareerMode, oppComebackApplied:false
   };
   LM.firstHalfEventCount = LM.events.length; // riferimento fisso per calcolare il minuto, non cresce quando si aggiunge il secondo tempo
 
@@ -8086,7 +8177,25 @@ function applyLiveEvent(ev){
   }
 }
 
+// Prima l'avversario CPU teneva la stessa tattica (LM.oppMods) invariata per tutta la partita,
+// intervallo incluso: anche perdendo 40-15 al 20' non reagiva mai, mentre il TUO intervallo ti
+// lascia sempre scegliere una contromossa. Ora, se la CPU sta subendo un distacco pesante a fine
+// primo tempo, cambia marcia anche lei per il resto della gara — una volta sola per partita (non
+// ha senso "raddoppiare" la reazione se resta comunque sotto). Solo Carriera: LM.oppMods e' sempre
+// {} fuori da li' (RTG/MyPlayer non hanno tattiche avversarie), quindi qui non ci sarebbe nulla su
+// cui innestare un bonus.
+const CPU_COMEBACK_MARGIN = 10;
+const CPU_COMEBACK_MODS = { paceBonus:5, stealBonus:0.035, pressureBonus:0.02, is3Bonus:0.03 };
+function nocCpuHalftimeReact(){
+  if(!LM.isCareerMode || LM.oppComebackApplied) return;
+  if((LM.scoreYou - LM.scoreOpp) < CPU_COMEBACK_MARGIN) return;
+  LM.oppMods = mergeModsAdditive(LM.oppMods, CPU_COMEBACK_MODS);
+  LM.oppComebackApplied = true;
+  if(typeof liveAddChronicle==='function') liveAddChronicle(state.opponent.name + ' cambia marcia per provare la rimonta.');
+}
+
 function showLiveHalftimePicker(){
+  nocCpuHalftimeReact();
   if(state.myPlayerCognome){
     const t = HALFTIME_OPTIONS[Math.floor(Math.random()*HALFTIME_OPTIONS.length)];
     const combined = { ...LM.baseMods, ...t.mod };
@@ -8763,6 +8872,7 @@ function skipLiveMatch(){
       const ev = LM.events[LM.idx];
       if(ev.type==='halftime'){
         LM.idx++;
+        nocCpuHalftimeReact();
         const secondHalf = generatePossessionEvents(LM.myRoster, LM.oppRoster, LM.possessionsEach, LM.possessionsEach*2, LM.baseMods, LM.oppMods);
         LM.events = LM.events.concat(secondHalf);
         continue;
@@ -8854,6 +8964,8 @@ function runSupercoppa(top4, onDone){
         state.postSeason.active = false;
         const won = champion===state.teamName;
         if(won) state.careerSupercoppaWon = true;
+        state.supercoppaRecap = won ? { status:'won' }
+          : { status:'eliminated', stage: state.postSeason.userEliminatedStage || 'Supercoppa' };
         showSupercoppaResult(won, champion, onDone);
       });
     });
@@ -8891,6 +9003,13 @@ function runCoppaItalia(onDone){
         state.postSeason.active = false;
         const won = champion===state.teamName;
         if(won) state.coppaItaliaWon = true;
+        // Esito sintetico persistito a parte: durante "Salta a Fine Stagione" showCoppaItaliaResult()
+        // non si vede mai (torna subito con onDone()), e il resultsLog di QUESTO mini-torneo viene
+        // scartato quando state.postSeason viene ricreato per playoff/Supercoppa piu' avanti nella
+        // run \u2014 senza questo campo, a fine stagione non resterebbe alcuna traccia di come e' andata.
+        state.coppaItaliaRecap = !userQualified ? { status:'not-qualified' }
+          : won ? { status:'won' }
+          : { status:'eliminated', stage: state.postSeason.userEliminatedStage || 'Coppa Italia' };
         showCoppaItaliaResult(won, champion, userQualified, onDone);
       });
     });
