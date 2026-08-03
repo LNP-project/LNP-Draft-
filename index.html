@@ -1656,8 +1656,8 @@ body{
 .noc-pcard{ aspect-ratio:5/7; border-radius:11px; overflow:hidden; position:relative; cursor:pointer;
   display:flex; flex-direction:column; background:linear-gradient(165deg,#2f3242,#20222e); box-shadow:0 0 0 1px #3f424d, 0 8px 22px rgba(0,0,0,.6); }
 .noc-pcard.revealed{ animation:nocFlipIn .55s cubic-bezier(.2,.8,.25,1) both; cursor:default; }
-.noc-pcard.noc-rar-rare{ box-shadow:0 0 0 1px #5c5783, 0 8px 22px rgba(0,0,0,.6); }
-.noc-pcard.noc-rar-epic, .noc-pcard.noc-rar-legendary{ box-shadow:0 0 0 1px var(--rc-edge), 0 0 46px var(--rc-glow); }
+.noc-pcard[class*="noc-rar-"]{ box-shadow:0 0 0 1.5px var(--rc-text), 0 8px 22px rgba(0,0,0,.6); }
+.noc-pcard.noc-rar-epic, .noc-pcard.noc-rar-legendary{ box-shadow:0 0 0 1.5px var(--rc-text), 0 0 46px var(--rc-glow); }
 .noc-pcard-closed{ flex:1; display:flex; align-items:center; justify-content:center; background:linear-gradient(160deg,#2b2741,#0f101a); }
 .noc-pcard-closed .noc-ball{ opacity:.5; }
 .noc-pcard-head{ display:flex; justify-content:space-between; padding:8.4px 9.8px; }
@@ -1678,10 +1678,10 @@ body{
 .noc-pcard-ovr{ font-size:19px; font-weight:700; flex:none; }
 .noc-pcard-stats{ display:grid; grid-template-columns:repeat(2,1fr); gap:2px 8px; margin-top:6px; padding-top:6px; border-top:1px solid rgba(233,233,237,.12); }
 .noc-cards-grid.solo .noc-pcard-stats{ grid-template-columns:repeat(4,1fr); }
-.noc-pcard-stat{ font-size:9px; color:#75798c; }
+.noc-pcard-stat{ font-size:9px; color:#75798c; display:flex; justify-content:space-between; align-items:baseline; }
 .noc-pcard-stat b{ font-size:10.5px; color:#e9e9ed; font-weight:600; margin-left:2px; }
 .noc-pick-btn{ width:100%; margin-top:8px; min-height:32px; border-radius:7px; border:none; cursor:pointer; font:600 10.5px/1 'Inter',sans-serif;
-  background:#9184d9; color:#161826; }
+  background:var(--rc-text, #9184d9); color:#161826; }
 .noc-pick-btn[disabled]{ background:#3a3f47; color:#7d838c; cursor:not-allowed; }
 
 /* ---------- End-of-season overlay ---------- */
@@ -2635,7 +2635,7 @@ const NOC_RARITY_CLASS = {
   epic:'noc-rar-epic', legendary:'noc-rar-legendary'
 };
 const NOC_RARITY_LABEL = {
-  common:'COMUNE', uncommon:'COMUNE', rare:'SPECIAL', epic:'ELITE', legendary:'LEGGENDA'
+  common:'COMUNE', uncommon:'NON COMUNE', rare:'SPECIAL', epic:'ELITE', legendary:'LEGGENDA'
 };
 const NOC_WOW_RARITIES = { epic:true, legendary:true };
 const NOC_ROLE_LABEL = { G:'Guardia', F:'Ala', C:'Centro' };
@@ -2738,6 +2738,53 @@ function nocFlashBurst(){
 
 /* Face HTML for a draft candidate (player card) */
 const NOC_BLOCKED_LABELS = { 'ex-limit':'Limite EX', 'role-full':'Ruolo completo' };
+/* Voti stile 2K sulla carta, al posto delle medie reali (che restano nell'Album — la figurina li
+   con la sua statistica, la carta racconta il giocatore in modo piu' "da gioco"). Percentile del
+   giocatore nel proprio ruolo, mappato su scala 50-99 (mai sotto 50, cosi' anche il peggiore resta
+   "leggibile" come un pro) — e il tetto della fascia alta si ferma volutamente a 90, non 99: i 90-99
+   restano una zona riservata alle carte speciali (pacchetti tipo "USA") che si sbloccheranno piu'
+   avanti, sommando un boost persistente sopra questo voto base invece di doverlo rifare da capo.
+   Tiro da 2/3 non hanno un dato reale separato nel dataset (solo PPG totale): un solo voto Tiro
+   unico invece di inventare uno split che non esiste. Rimbalzo/Passaggio/Difesa hanno in piu' un
+   peso per ruolo (un centro pesa molto il rimbalzo e poco le rubate, una guardia il contrario). */
+const NOC_RATING_ANCHORS = {
+  G: { ppg:{min:0.8,p10:3.5,p50:8.6,p90:15.4,max:21.9}, apg:{min:0.2,p10:0.6,p50:2.2,p90:4.1,max:9},
+       rpg:{min:0.6,p10:1.2,p50:2.7,p90:4.4,max:5.6}, spg:{min:0,p10:0.2,p50:0.7,p90:1.2,max:1.8} },
+  F: { ppg:{min:2.3,p10:3.6,p50:7.8,p90:14.5,max:19.4}, apg:{min:0.24,p10:0.5,p50:0.9,p90:1.8,max:4.9},
+       rpg:{min:1.1,p10:2.3,p50:3.6,p90:5.8,max:9.9}, spg:{min:0,p10:0.21,p50:0.5,p90:0.8,max:1.3} },
+  C: { ppg:{min:0.9,p10:3.1,p50:6.5,p90:13.9,max:19.3}, apg:{min:0,p10:0.4,p50:0.9,p90:1.9,max:4.2},
+       rpg:{min:1,p10:2.3,p50:4.9,p90:7.7,max:10.8}, spg:{min:0,p10:0.1,p50:0.5,p90:0.7,max:1} }
+};
+function nocMapStatToRating(value, a){
+  if(value<=a.p10) return Math.round(50 + (value-a.min)/((a.p10-a.min)||1)*8);
+  if(value<=a.p50) return Math.round(58 + (value-a.p10)/((a.p50-a.p10)||1)*10);
+  if(value<=a.p90) return Math.round(68 + (value-a.p50)/((a.p90-a.p50)||1)*12);
+  return Math.round(80 + Math.min(1,(value-a.p90)/((a.max-a.p90)||1))*10); // tetto base 90, 91-99 riservato alle carte speciali
+}
+const NOC_RATING_EMPHASIS_PIVOT = 75;
+const NOC_RATING_EMPHASIS = {
+  rimbalzo:  { G:0.75, F:1.05, C:1.25 },
+  difesa:    { G:1.20, F:0.95, C:0.55 },
+  passaggio: { G:1.25, F:0.90, C:0.70 }
+};
+function nocApplyRatingEmphasis(raw, role, key){
+  const mult = (NOC_RATING_EMPHASIS[key] && NOC_RATING_EMPHASIS[key][role]) || 1;
+  return Math.max(50, Math.min(99, Math.round(NOC_RATING_EMPHASIS_PIVOT + (raw-NOC_RATING_EMPHASIS_PIVOT)*mult)));
+}
+function computeCardRatings(p){
+  const role = (typeof macroRole==='function' && p.ruolo1) ? macroRole(p.ruolo1) : (p.role||'G');
+  const a = NOC_RATING_ANCHORS[role] || NOC_RATING_ANCHORS.G;
+  const tiro = nocMapStatToRating(p.ppg||0, a.ppg);
+  const rimbalzo = nocApplyRatingEmphasis(nocMapStatToRating(p.rpg||0, a.rpg), role, 'rimbalzo');
+  const passaggio = nocApplyRatingEmphasis(nocMapStatToRating(p.apg||0, a.apg), role, 'passaggio');
+  const difesa = nocApplyRatingEmphasis(nocMapStatToRating(p.spg||0, a.spg), role, 'difesa');
+  // Il numero grande in alto sulla carta deve leggersi come la sintesi dei 4 voti sotto (media
+  // diretta) — prima era il vecchio OVR di gioco (scala 2-50, usata altrove per rarita'/mercato,
+  // qui invece lasciata intatta) e non c'entrava nulla con i voti mostrati sulla stessa carta.
+  const overall = Math.max(50, Math.min(99, Math.round((tiro+rimbalzo+passaggio+difesa)/4)));
+  return { tiro, rimbalzo, passaggio, difesa, overall };
+}
+
 function nocPlayerCardFace(cand){
   const p = cand.player;
   const rarLabel = NOC_RARITY_LABEL[cand.rarity] || 'COMUNE';
@@ -2746,6 +2793,7 @@ function nocPlayerCardFace(cand){
   const roleColor = NOC_ROLE_COLOR[roleKey] || '#5c5783';
   const exBadge = p.naz==='EX' ? '<span class="noc-pcard-ex-badge">EX</span>' : '';
   const btnLabel = cand.blocked ? (NOC_BLOCKED_LABELS[cand.blockedReason] || 'Limite EX') : 'Seleziona';
+  const ratings = computeCardRatings(p);
   return (
     '<div class="noc-pcard-head">' +
       '<span class="noc-pcard-rarity" style="color:var(--rc-text);">' + rarLabel + '</span>' +
@@ -2761,13 +2809,13 @@ function nocPlayerCardFace(cand){
           '<div class="noc-pcard-name">' + p.cognome + '</div>' +
           '<div class="noc-pcard-team">' + (p.club||'') + '</div>' +
         '</div>' +
-        '<div class="noc-pcard-ovr" style="color:var(--rc-ovr);">' + p.ovr + '</div>' +
+        '<div class="noc-pcard-ovr" style="color:var(--rc-ovr);">' + ratings.overall + '</div>' +
       '</div>' +
       '<div class="noc-pcard-stats">' +
-        '<div class="noc-pcard-stat">PPG<b>' + p.ppg + '</b></div>' +
-        '<div class="noc-pcard-stat">APG<b>' + p.apg + '</b></div>' +
-        '<div class="noc-pcard-stat">RPG<b>' + p.rpg + '</b></div>' +
-        '<div class="noc-pcard-stat">SPG<b>' + p.spg + '</b></div>' +
+        '<div class="noc-pcard-stat">TIRO<b>' + ratings.tiro + '</b></div>' +
+        '<div class="noc-pcard-stat">RIMB<b>' + ratings.rimbalzo + '</b></div>' +
+        '<div class="noc-pcard-stat">PASS<b>' + ratings.passaggio + '</b></div>' +
+        '<div class="noc-pcard-stat">DIF<b>' + ratings.difesa + '</b></div>' +
       '</div>' +
       '<button type="button" class="noc-pick-btn" ' + (cand.blocked?'disabled':'') + '>' + btnLabel + '</button>' +
     '</div>'
@@ -4227,6 +4275,28 @@ function currentRoleQuotas(){
    comunque essere di un ruolo gia' completato: restano visibili ma bloccate
    (bottone "Ruolo completo", stesso pattern gia' usato per il limite EX) cosi'
    l'utente capisce perche' non sono selezionabili invece di sparire e basta. */
+// Odds per la carta "target" di ogni pescata: senza questo peso, drawOne pescava in modo
+// puramente uniforme fra tutti i giocatori eleggibili per ruolo, quindi se il pool reale aveva
+// tanti giocatori da ovr alto per un ruolo, le leggendarie uscivano molto piu' spesso del previsto
+// (segnalato dall'utente: "nel draft ho trovato molte leggende, si vince sempre"). Ora ogni
+// pescata tira prima la fascia di rarita' bersaglio con queste percentuali, poi pesca a caso solo
+// dentro quella fascia (o dalla fascia piu' vicina non vuota, se quella target e' scoperta per quel
+// ruolo/pool). La garanzia "almeno 1 rara-o-meglio per pacchetto" sotto resta com'era, come rete di
+// sicurezza indipendente da queste percentuali.
+const DRAFT_RARITY_ODDS = [
+  ['common', 0.55], ['uncommon', 0.27], ['rare', 0.12], ['epic', 0.04], ['legendary', 0.02]
+];
+const DRAFT_RARITY_TIER_ORDER = ['common','uncommon','rare','epic','legendary'];
+function rollDraftRarityTier(){
+  const r = Math.random();
+  let acc = 0;
+  for(let i=0;i<DRAFT_RARITY_ODDS.length;i++){
+    acc += DRAFT_RARITY_ODDS[i][1];
+    if(r<=acc) return DRAFT_RARITY_ODDS[i][0];
+  }
+  return 'common';
+}
+
 function buildMixedDraftPool(){
   const quotas = currentRoleQuotas();
   const allRoles = ['G','F','C'];
@@ -4235,9 +4305,24 @@ function buildMixedDraftPool(){
   const exCapped = currentExCount >= MAX_EX_PLAYERS;
   const usedInPack = new Set();
 
-  function drawOne(role, excludeExIfCapped){
+  function drawOne(role, excludeExIfCapped, minOvr, targetRarityTier){
     let pool = eligiblePool(role).filter(function(p){ return !usedInPack.has(p.nome+'|'+p.cognome); });
+    if(minOvr!=null) pool = pool.filter(function(p){ return p.ovr>=minOvr; });
     if(excludeExIfCapped && exCapped) pool = pool.filter(function(p){ return p.naz!=='EX'; });
+
+    if(targetRarityTier){
+      const startIdx = DRAFT_RARITY_TIER_ORDER.indexOf(targetRarityTier);
+      let tiered = [];
+      for(let dist=0; dist<DRAFT_RARITY_TIER_ORDER.length && !tiered.length; dist++){
+        const idxs = [startIdx-dist, startIdx+dist].filter(function(i){ return i>=0 && i<DRAFT_RARITY_TIER_ORDER.length; });
+        for(let k=0;k<idxs.length && !tiered.length;k++){
+          const tier = DRAFT_RARITY_TIER_ORDER[idxs[k]];
+          tiered = pool.filter(function(p){ return draftRarityTier(p.ovr)===tier; });
+        }
+      }
+      if(tiered.length) pool = tiered;
+    }
+
     pool = shuffled(pool);
     const p = pool[0];
     if(!p) return null;
@@ -4255,7 +4340,7 @@ function buildMixedDraftPool(){
   // puo' mai risultare a sua volta bloccata dal tetto EX, lasciando il pacchetto vuoto.
   const rolesToTry = shuffled(neededRoles.slice());
   for(let i=0;i<rolesToTry.length;i++){
-    const guaranteed = drawOne(rolesToTry[i], true);
+    const guaranteed = drawOne(rolesToTry[i], true, null, rollDraftRarityTier());
     if(guaranteed){ cards.push(guaranteed); break; }
   }
 
@@ -4263,9 +4348,32 @@ function buildMixedDraftPool(){
   while(cards.length < MIXED_PACK_SIZE && attempts < 60){
     attempts++;
     const role = allRoles[Math.floor(Math.random()*allRoles.length)];
-    const c = drawOne(role, false);
+    const c = drawOne(role, false, null, rollDraftRarityTier());
     if(c) cards.push(c);
   }
+
+  // Garanzia rarita' (su richiesta dell'utente, per il pacchetto che si apre davvero a ogni draft):
+  // almeno 1 carta rara-o-meglio (OVR>=23, stessa soglia di draftRarityTier) per pacchetto, sempre.
+  // Se il pescaggio normale non ne ha prodotta nessuna, sostituisce l'ultima carta con una
+  // rara-o-meglio — provando prima i ruoli ancora richiesti per non sprecare lo slot su un ruolo
+  // gia' completo, poi qualsiasi ruolo se in quelli richiesti non ce n'e' una disponibile.
+  const RARE_OVR_FLOOR = 23;
+  const hasRareOrBetter = cards.some(function(c){ return c.player.ovr>=RARE_OVR_FLOOR; });
+  if(!hasRareOrBetter && cards.length){
+    let replacement = null;
+    const firstTry = shuffled((neededRoles.length ? neededRoles : allRoles).slice());
+    for(let i=0;i<firstTry.length && !replacement;i++){
+      replacement = drawOne(firstTry[i], true, RARE_OVR_FLOOR);
+    }
+    if(!replacement){
+      const secondTry = shuffled(allRoles.slice());
+      for(let i=0;i<secondTry.length && !replacement;i++){
+        replacement = drawOne(secondTry[i], true, RARE_OVR_FLOOR);
+      }
+    }
+    if(replacement) cards[cards.length-1] = replacement;
+  }
+
   return cards;
 }
 
@@ -5394,6 +5502,17 @@ function finishPostSeason(message, outcome){
     const coinsEarned = coinsForOutcome(finalOutcome);
     profile.coins += coinsEarned;
     saveProfile();
+    // Missioni giornaliere a livello di run: questo e' il punto in cui una run finisce davvero,
+    // quindi e' qui (non a ogni singola partita) che si contano le run completate e si controllano
+    // gli esiti "grossi" della stagione appena chiusa. Solo Career (non MyPlayer/RTG, che hanno un
+    // proprio percorso e non attraversano questa schermata come una run "normale").
+    if(!state.myPlayerCognome && !(state.rtg && state.rtg.active)){
+      nocRecordDailyProgress('runsPlayed', 1);
+      if(nocBestOwnPlayerPpgThisSeason() >= 20) nocRecordDailyProgress('star20', 1);
+      if(finalOutcome.includes('Campione')) nocRecordDailyProgress('champion', 1);
+      if(finalOutcome.includes('Promosso')) nocRecordDailyProgress('promoted', 1);
+      if(state.coppaItaliaWon) nocRecordDailyProgress('coppaWon', 1);
+    }
     const mvp = computeSeasonMVP();
     nocShowEndOfSeason({ message, coinsEarned, mvp, resultsLog });
   }
@@ -6023,6 +6142,10 @@ function nocEnsureShell(){
         '<div id="noc-obj-list"></div>' +
       '</div>' +
       '<div style="margin-top:16.8px;">' +
+        '<div class="noc-section-head"><div class="noc-section-title">Missioni Giornaliere</div><div class="noc-section-count" id="noc-daily-count">0/3</div></div>' +
+        '<div id="noc-daily-list"></div>' +
+      '</div>' +
+      '<div style="margin-top:16.8px;">' +
         '<button type="button" class="noc-btn noc-btn-danger noc-btn-full" id="noc-reset-run">Resetta Run</button>' +
         '<div class="noc-hero-sub" style="max-width:none;margin-top:8px;">Ricomincia dal Draft con un nuovo club: monete e obiettivi restano invariati.</div>' +
       '</div>' +
@@ -6163,6 +6286,100 @@ function nocRenderObjectives(){
         '<div class="noc-obj-right">' +
           '<span class="noc-obj-progress">'+o.val+'/'+o.target+'</span>' +
           '<span class="noc-obj-reward">+'+o.reward+'</span>' +
+        '</div>' +
+      '</div>'
+    );
+  }).join('');
+}
+
+/* Missioni a livello di RUN, non di singola partita: "gioca 3 partite" si completava in pochi
+   minuti (segnalato dall'utente come troppo poco), ma questo gioco si gioca a run intere
+   (stagione + eventuale post-season), che con "Salta a Fine Stagione" si chiudono in fretta —
+   quindi puntare a esiti di fine run (run completate, un giocatore a 20 di media, vincere il
+   campionato/la coppa) e' un traguardo giornaliero realistico ma che richiede scelte vere,
+   non solo "premi gioca qualche volta". */
+const DAILY_MISSION_POOL = [
+  { id:'runs3', title:'Completa 3 run', key:'runsPlayed', target:3, reward:60 },
+  { id:'runs5', title:'Completa 5 run', key:'runsPlayed', target:5, reward:100 },
+  { id:'star20', title:'Porta un giocatore a 20 di media', key:'star20', target:1, reward:50 },
+  { id:'champion', title:'Vinci il campionato', key:'champion', target:1, reward:150 },
+  { id:'promoted', title:'Ottieni una promozione', key:'promoted', target:1, reward:100 },
+  { id:'coppa', title:'Vinci la Coppa Italia', key:'coppaWon', target:1, reward:90 },
+  { id:'pack3', title:'Apri 3 pacchetti', key:'packs', target:3, reward:40 }
+];
+
+/* Regenerates today's 3 missions the first time they're touched on a new
+   calendar day; profile.dailyMissions otherwise carries over untouched. */
+function nocEnsureDailyMissions(){
+  const today = new Date().toDateString();
+  if(profile.dailyMissions && profile.dailyMissions.date === today) return;
+  const pool = DAILY_MISSION_POOL.slice();
+  for(let i=pool.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    const tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
+  }
+  profile.dailyMissions = {
+    date: today,
+    missionIds: pool.slice(0,3).map(function(m){ return m.id; }),
+    progress: { runsPlayed:0, star20:0, champion:0, promoted:0, coppaWon:0, packs:0 },
+    claimed: {}
+  };
+  saveProfile();
+}
+
+function nocAwardDailyMissions(){
+  const dm = profile.dailyMissions;
+  DAILY_MISSION_POOL.filter(function(m){ return dm.missionIds.indexOf(m.id)>=0; }).forEach(function(m){
+    if(dm.claimed[m.id]) return;
+    if((dm.progress[m.key]||0) >= m.target){ dm.claimed[m.id] = true; profile.coins += m.reward; }
+  });
+}
+
+function nocRecordDailyProgress(key, amount){
+  nocEnsureDailyMissions();
+  const p = profile.dailyMissions.progress;
+  p[key] = (p[key]||0) + (amount==null ? 1 : amount);
+  nocAwardDailyMissions();
+  saveProfile();
+}
+
+/* Miglior media punti fra i TUOI giocatori in questa stagione appena conclusa — usata dalla
+   missione "porta un giocatore a 20 di media" (stessa fonte dati/filtro di computeSeasonMVP:
+   state.leagueStatsProgress filtrato sul tuo club). */
+function nocBestOwnPlayerPpgThisSeason(){
+  const progress = state.leagueStatsProgress || {};
+  let best = 0;
+  Object.keys(progress).forEach(function(key){
+    const rec = progress[key];
+    const club = key.split('|')[2];
+    if(club === state.teamName && rec.games > 0) best = Math.max(best, rec.pts/rec.games);
+  });
+  return best;
+}
+
+function nocRenderDailyMissions(){
+  const list = document.getElementById('noc-daily-list');
+  const count = document.getElementById('noc-daily-count');
+  if(!list) return;
+  nocEnsureDailyMissions();
+  const dm = profile.dailyMissions;
+  const missions = DAILY_MISSION_POOL.filter(function(m){ return dm.missionIds.indexOf(m.id)>=0; });
+  const doneCount = missions.filter(function(m){ return (dm.progress[m.key]||0) >= m.target; }).length;
+  count.textContent = doneCount+'/'+missions.length;
+  list.innerHTML = missions.map(function(m){
+    const val = Math.min(dm.progress[m.key]||0, m.target);
+    const done = val>=m.target;
+    const pct = Math.round((val/m.target)*100);
+    return (
+      '<div class="noc-obj-row">' +
+        '<div class="noc-obj-badge'+(done?' done':'')+'">'+(done?'&#10003;':m.title.charAt(0))+'</div>' +
+        '<div class="noc-obj-body">' +
+          '<div class="noc-obj-title">'+m.title+'</div>' +
+          '<div class="noc-obj-track"><div class="noc-obj-fill" style="width:'+pct+'%;"></div></div>' +
+        '</div>' +
+        '<div class="noc-obj-right">' +
+          '<span class="noc-obj-progress">'+val+'/'+m.target+'</span>' +
+          '<span class="noc-obj-reward">+'+m.reward+'</span>' +
         '</div>' +
       '</div>'
     );
@@ -6518,6 +6735,7 @@ function nocRefreshShell(){
   const statCrm = document.getElementById('noc-stat-crm');
   if(statCrm) statCrm.textContent = (typeof profile !== 'undefined' ? profile.coins : 0);
   nocRenderObjectives();
+  nocRenderDailyMissions();
 
   // rosa tab
   if(typeof nocUpdateRosterTacticLine==='function') nocUpdateRosterTacticLine();
@@ -8921,6 +9139,7 @@ function renderShopScreen(modal){
     ensureGlobalAudio();
     profile.coins -= PACK_COST;
     state.packsOpened = (state.packsOpened||0) + 1;
+    nocRecordDailyProgress('packs', 1);
     saveGame();
     const items = [rollPackItem(), rollPackItem(), rollPackItem()];
     const messages = items.map(applyPackItem);
