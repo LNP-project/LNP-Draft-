@@ -1324,7 +1324,7 @@ body{
 .nmp-actions .modal-btn{ flex:1; }
 .tactic-mini-court{
   display:block; border-radius:6px; overflow:hidden; margin-bottom:8px;
-  border:1px solid var(--border);
+  border:1px solid var(--border); max-height:160px;
 }
 .match-start-row{ display:flex; gap:8px; margin-top:14px; }
 .match-start-row .modal-btn{ flex:1; }
@@ -1703,6 +1703,27 @@ body{
 .noc-eos-name{ font-size:13px; font-weight:600; margin-top:1px; }
 .noc-eos-value{ font-size:15px; font-weight:700; margin-left:auto; white-space:nowrap; }
 .noc-eos-summary{ border-radius:8px; background:rgba(35,37,50,.7); padding:11.2px; font-size:12px; color:#cfd3e5; line-height:1.6; }
+.noc-eos-radar-wrap{ border-radius:14px; padding:14px; background:#232532; }
+.noc-eos-stats-table{ border-radius:8px; background:#232532; }
+.noc-eos-stats-head, .noc-eos-stats-row{ display:flex; gap:4px; padding:8px 11.2px; align-items:center; }
+.noc-eos-stats-head span, .noc-eos-stats-row span{ flex:1 1 0; min-width:0; }
+.noc-eos-stats-head span:first-child, .noc-eos-stats-row span:first-child{ flex:1.6 1 0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.noc-eos-stats-head{ font:600 9.5px/1 'Inter',sans-serif; text-transform:uppercase; letter-spacing:.06em; color:#75798c; }
+.noc-eos-stats-head span:not(:first-child), .noc-eos-stats-row span:not(:first-child){ text-align:right; }
+.noc-eos-stats-row{ font-size:12.5px; color:#e9e9ed; border-top:1px solid #2c2e3a; }
+.noc-eos-stats-row span:first-child{ font-weight:600; }
+.noc-recap-mvp{ border-radius:14px; padding:20px 14px 16px; background:linear-gradient(160deg,#2b2741,#1d1f30); border:1px solid #5d5294; text-align:center; margin-bottom:11.2px; }
+.noc-recap-mvp-kicker{ font:700 9.5px/1 'Inter',sans-serif; text-transform:uppercase; letter-spacing:.12em; color:#b5afe8; }
+.noc-recap-mvp-avatar{ width:64px; height:64px; border-radius:99px; background:linear-gradient(150deg,#796cbf,#4a3d94); display:flex; align-items:center; justify-content:center; font:700 20px/1 'Inter',sans-serif; color:#fff; margin:11.2px auto 8px; }
+.noc-recap-mvp-name{ font-size:16px; font-weight:700; color:#e9e9ed; }
+.noc-recap-mvp-stats{ font-size:11.5px; color:#9397ab; margin-top:4px; }
+.noc-recap-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.noc-recap-tile{ border-radius:8px; background:#232532; padding:11.2px; }
+.noc-recap-tile-label{ font:600 9px/1 'Inter',sans-serif; text-transform:uppercase; letter-spacing:.06em; color:#75798c; }
+.noc-recap-tile-value{ font-size:20px; font-weight:700; color:#e9e9ed; margin-top:4px; }
+.noc-recap-tile-value.positive{ color:#7ed957; }
+.noc-recap-tile-value.negative{ color:#e2542d; }
+.noc-recap-tile-sub{ font-size:10.5px; color:#75798c; margin-top:2px; }
 
 @media (max-width:380px){ .noc-slot{ width:82px; } }
 
@@ -2992,6 +3013,108 @@ function openBoosterPack(opts){
    the same roster" or "return to league select from inside the career hub"
    flow, so re-using an unrelated one here would risk leaving the app in a
    broken screen state; landing on Shop matches the literal CTA and is safe). */
+/* Radar "profilo di squadra" a fine stagione (su richiesta dell'utente, ispirato ai radar delle
+   abilita' di PES): 6 assi, tutti gia' tracciati nel tabellino di ogni partita in state.matchFeed.
+   I tiri in isolamento erano inizialmente un asse a se', ma valgono solo per chi gioca tattiche con
+   isoBonus (non tutte, alcune bloccate di default) — tolti dal radar per questo, restano pero'
+   taggati in generatePossessionEvents() e usati per il modello degli assist (vedi li'). Al loro
+   posto, Punti Totali: sempre tracciato, sempre diverso da zero per chiunque, completa il quadro
+   invece di ripetere quello che gia' dicono gli assi dei tiri. Numeri grezzi di stagione (non
+   percentuali): ogni asse ha un proprio tetto di scala fisso, calibrato simulando stagioni reali con
+   tattiche diverse, cosi' il poligono resta leggibile senza dover confrontare con una media di lega. */
+const NOC_RADAR_AXES = [
+  { key:'tiri3', label:'Tiri da 3', max:1000 },
+  { key:'tiri2', label:'Tiri da 2', max:1700 },
+  { key:'rimbalzi', label:'Rimbalzi', max:1400 },
+  { key:'assist', label:'Assist', max:1100 },
+  { key:'recuperate', label:'Palle Rec.', max:450 },
+  { key:'punti', label:'Punti', max:3800 }
+];
+
+function computeSeasonTeamTotals(){
+  const totals = { tiri3:0, tiri2:0, rimbalzi:0, assist:0, recuperate:0, punti:0 };
+  (state.matchFeed||[]).forEach(function(entry){
+    totals.punti += entry.scoreYou||0;
+    const box = entry.myBox || {};
+    Object.keys(box).forEach(function(cognome){
+      const d = box[cognome];
+      totals.tiri3 += d.att3||0;
+      totals.tiri2 += d.att2||0;
+      totals.rimbalzi += d.reb||0;
+      totals.assist += d.ast||0;
+      totals.recuperate += d.stl||0;
+    });
+  });
+  return totals;
+}
+
+function nocBuildRadarSvg(totals){
+  const axes = NOC_RADAR_AXES, n = axes.length, cx=200, cy=200, R=140;
+  function pt(i, r){
+    const angle = -Math.PI/2 + i*(2*Math.PI/n);
+    return { x: cx + r*Math.cos(angle), y: cy + r*Math.sin(angle) };
+  }
+  function ringPoints(r){
+    return axes.map(function(_,i){ const p=pt(i,r); return p.x.toFixed(1)+','+p.y.toFixed(1); }).join(' ');
+  }
+  const rings = [0.33,0.66,1].map(function(f){
+    return '<polygon points="'+ringPoints(R*f)+'" fill="none" stroke="#3f424d" stroke-width="1"/>';
+  }).join('');
+  const spokes = axes.map(function(_,i){
+    const p = pt(i,R);
+    return '<line x1="'+cx+'" y1="'+cy+'" x2="'+p.x.toFixed(1)+'" y2="'+p.y.toFixed(1)+'" stroke="#3f424d" stroke-width="1"/>';
+  }).join('');
+  const dataPts = axes.map(function(ax,i){
+    const val = totals[ax.key]||0;
+    const frac = Math.max(0, Math.min(1, val/ax.max));
+    const p = pt(i, R*frac);
+    return { x:p.x, y:p.y, val:val };
+  });
+  const polygonPoints = dataPts.map(function(p){ return p.x.toFixed(1)+','+p.y.toFixed(1); }).join(' ');
+  const dots = dataPts.map(function(p){
+    return '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="3.5" fill="#b5abfc"/>';
+  }).join('');
+  const labels = axes.map(function(ax,i){
+    const p = pt(i, R+38);
+    const anchor = Math.abs(p.x-cx)<4 ? 'middle' : (p.x>cx ? 'start' : 'end');
+    const val = totals[ax.key]||0;
+    return '<text x="'+p.x.toFixed(1)+'" y="'+(p.y-4).toFixed(1)+'" text-anchor="'+anchor+'" fill="#9397ab" font-size="10">'+ax.label+'</text>'+
+           '<text x="'+p.x.toFixed(1)+'" y="'+(p.y+11).toFixed(1)+'" text-anchor="'+anchor+'" fill="#e9e9ed" font-size="14" font-weight="700">'+val+'</text>';
+  }).join('');
+  return '<svg viewBox="0 0 400 400" width="100%" style="max-width:320px;display:block;margin:0 auto;">'+
+    rings+spokes+
+    '<polygon points="'+polygonPoints+'" fill="rgba(181,171,252,.28)" stroke="#b5abfc" stroke-width="2"/>'+
+    dots+labels+
+  '</svg>';
+}
+
+function computeSeasonPlayerAverages(){
+  const progress = state.leagueStatsProgress || {};
+  return (state.roster||[]).map(function(p){
+    const key = p.nome+'|'+p.cognome+'|'+state.teamName;
+    const rec = progress[key];
+    const games = rec ? rec.games : 0;
+    return {
+      cognome: p.cognome, role: p.role, games: games,
+      ppg: games ? rec.pts/games : 0,
+      rpg: games ? rec.reb/games : 0,
+      apg: games ? rec.ast/games : 0,
+      spg: games ? rec.stl/games : 0
+    };
+  }).sort(function(a,b){ return b.ppg-a.ppg; });
+}
+
+function nocPlayerAveragesHtml(){
+  const rows = computeSeasonPlayerAverages();
+  return '<div class="noc-section-title" style="margin-bottom:8px;">Medie Stagionali</div>'+
+    '<div class="noc-eos-stats-table">'+
+      '<div class="noc-eos-stats-head"><span>Giocatore</span><span>PPG</span><span>RPG</span><span>APG</span><span>SPG</span></div>'+
+      rows.map(function(r){
+        return '<div class="noc-eos-stats-row"><span>'+r.cognome+'</span><span>'+r.ppg.toFixed(1)+'</span><span>'+r.rpg.toFixed(1)+'</span><span>'+r.apg.toFixed(1)+'</span><span>'+r.spg.toFixed(1)+'</span></div>';
+      }).join('')+
+    '</div>';
+}
+
 function nocShowEndOfSeason(data){
   data = data || {};
   const ps = state.postSeason || {};
@@ -3001,10 +3124,6 @@ function nocShowEndOfSeason(data){
   if(!pos) pos = total;
 
   const mvp = data.mvp;
-  const rows = [];
-  if(mvp){
-    rows.push({ award:'MVP Squadra', nome: mvp.nome, cognome: mvp.cognome, value: mvp.ppg.toFixed(1)+' PPG' });
-  }
 
   const overlay = document.createElement('div');
   overlay.className = 'noc-scope noc-eos-overlay';
@@ -3024,23 +3143,15 @@ function nocShowEndOfSeason(data){
       '</div>' +
       '<div class="noc-eos-credits">+' + (data.coinsEarned||0) + '</div>' +
     '</div>' +
-    (rows.length ? (
-      '<div>' +
-        '<div class="noc-section-title" style="margin-bottom:8px;">Migliori della stagione</div>' +
-        rows.map(function(r,i){
-          return (
-            '<div class="noc-eos-row' + (i===0?' first':'') + '" style="margin-top:' + (i===0?'0':'6px') + ';">' +
-              '<div class="noc-eos-avatar">' + nocInitials(r.nome, r.cognome) + '</div>' +
-              '<div>' +
-                '<div class="noc-eos-award">' + r.award + '</div>' +
-                '<div class="noc-eos-name">' + r.nome + ' ' + r.cognome + '</div>' +
-              '</div>' +
-              '<div class="noc-eos-value">' + r.value + '</div>' +
-            '</div>'
-          );
-        }).join('') +
-      '</div>'
-    ) : '') +
+    '<div>' +
+      '<div class="noc-section-title" style="margin-bottom:8px;">Profilo di Squadra</div>' +
+      '<div class="noc-eos-radar-wrap">' + nocBuildRadarSvg(computeSeasonTeamTotals()) + '</div>' +
+    '</div>' +
+    '<div>' +
+      '<div class="noc-section-title" style="margin-bottom:8px;">Run Recap</div>' +
+      nocRunRecapHtml(mvp, computeRunRecap()) +
+    '</div>' +
+    nocPlayerAveragesHtml() +
     '<div class="noc-eos-summary">Record finale: <b>' + state.record.w + '-' + state.record.l + '</b></div>' +
     '<button type="button" class="noc-btn noc-btn-primary noc-btn-full" id="noc-eos-cta">Incassa e vai allo shop</button>' +
     '<button type="button" class="noc-btn noc-btn-secondary noc-btn-full" id="noc-eos-restart" style="margin-top:8px;">Nuova Stagione</button>';
@@ -3455,7 +3566,7 @@ const TACTICS = [
   { id:'heroball', type:'off', title:'Hero Ball / Iso-Heavy', icon:'star', desc:"Palla al giocatore piu talentuoso, gli altri quattro si spaziano: si affida tutto all'uno contro uno.", mod:{ isoBonus:3, astBonus:-0.02, makeAllPenalty:-0.006 } },
   { id:'zone', type:'def', title:'Difesa a Zona (2-3)', icon:'shield', desc:'Abbassa la percentuale da 2 avversaria, ma concede piu tentativi da 3.', mod:{ oppIs3Bonus:0.07, oppMake2Penalty:-0.03 } },
   { id:'man', type:'def', title:'Difesa a Uomo', icon:'shield', desc:'Marcatura diretta su ogni giocatore, equilibrata: nessun bonus o malus particolare.', mod:{} },
-  { id:'fullcourt', type:'def', title:'Uomo a Tutto Campo', icon:'run', desc:'Pressione dal primo palleggio per stancare e forzare palle perse, ma concede canestri facili in transizione.', mod:{ stealBonus:0.04, turnoverBonus:0.03, oppIs3Bonus:0.03 } },
+  { id:'fullcourt', type:'def', title:'Uomo a Tutto Campo', icon:'run', desc:'Pressione dal primo palleggio per stancare e forzare palle perse, ma concede canestri facili in transizione.', mod:{ stealBonus:0.04, pressureBonus:0.03, oppIs3Bonus:0.03 } },
   { id:'doubleteam', type:'def', title:'Raddoppi Continui', icon:'users', desc:'Raddoppia sempre il miglior marcatore avversario: forza palle perse ma lascia scoperti i tiratori.', mod:{ stealBonus:0.05, oppIs3Bonus:0.08 } }
 ];
 
@@ -4358,35 +4469,53 @@ function renderTacticLabel(){
   el.innerHTML = (t.icon ? `<span class="icon-badge blue" style="width:22px;height:22px;min-width:22px;border-radius:6px;">${iconSvg(t.icon,'12px')}</span> ` : '') + t.title;
 }
 
+/* Coordinate ricalcolate su richiesta dell'utente: lo schema originale usava un campo intero
+   (viewBox 400x300, 4:3) dentro card larghe la meta' dello schermo — su telefono (colonna singola
+   sotto i 520px) ogni card arrivava a superare i 400px di sola altezza per il disegno, con i
+   pallini piccoli e sbiaditi rispetto al resto della UI. Stessa disposizione relativa dei
+   giocatori di prima, riscalata in verticale per stare in un formato molto piu' compatto (vedi
+   renderTacticDiagram) invece di un campo intero. */
 const TACTIC_DIAGRAMS = {
-  balanced:   { pos:[[200,235],[110,195],[290,195],[92,105],[308,105]], hi:[] },
-  rungun:     { pos:[[200,270],[90,150],[310,150],[160,90],[240,90]], hi:[0,1,2] },
-  '7sec':     { pos:[[200,275],[130,180],[270,180],[100,90],[300,90]], hi:[0] },
-  smallball:  { pos:[[200,230],[70,110],[330,110],[130,60],[270,60]], hi:[0] },
-  doublebig:  { pos:[[170,240],[230,240],[110,110],[290,110],[200,70]], hi:[0,1] },
-  '5out':     { pos:[[200,55],[70,110],[330,110],[100,220],[300,220]], hi:[0,1,2,3,4] },
-  pnr:        { pos:[[200,150],[230,180],[90,110],[310,110],[200,240]], hi:[0,1] },
-  motion:     { pos:[[200,235],[110,195],[290,195],[92,105],[308,105]], hi:[] },
-  heroball:   { pos:[[220,200],[70,90],[330,90],[70,240],[330,240]], hi:[0] },
-  zone:       { pos:[[130,110],[270,110],[80,220],[200,220],[320,220]], hi:[0,1,2,3,4] },
-  man:        { pos:[[200,235],[110,195],[290,195],[92,105],[308,105]], hi:[] },
-  fullcourt:  { pos:[[200,60],[110,100],[290,100],[150,180],[250,180]], hi:[0,1,2,3,4] },
-  doubleteam: { pos:[[200,235],[230,200],[170,200],[92,105],[308,105]], hi:[0,1,2] }
+  balanced: { pos:[[200,130],[110,107],[290,107],[92,54],[308,54]], hi:[] },
+  rungun: { pos:[[200,151],[90,80],[310,80],[160,45],[240,45]], hi:[0,1,2] },
+  '7sec': { pos:[[200,154],[130,98],[270,98],[100,45],[300,45]], hi:[0] },
+  smallball: { pos:[[200,127],[70,57],[330,57],[130,27],[270,27]], hi:[0] },
+  doublebig: { pos:[[170,133],[230,133],[110,57],[290,57],[200,33]], hi:[0,1] },
+  '5out': { pos:[[200,24],[70,57],[330,57],[100,122],[300,122]], hi:[0,1,2,3,4] },
+  pnr: { pos:[[200,80],[230,98],[90,57],[310,57],[200,133]], hi:[0,1] },
+  motion: { pos:[[200,130],[110,107],[290,107],[92,54],[308,54]], hi:[] },
+  heroball: { pos:[[220,110],[70,45],[330,45],[70,133],[330,133]], hi:[0] },
+  zone: { pos:[[130,57],[270,57],[80,122],[200,122],[320,122]], hi:[0,1,2,3,4] },
+  man: { pos:[[200,130],[110,107],[290,107],[92,54],[308,54]], hi:[] },
+  fullcourt: { pos:[[200,27],[110,51],[290,51],[150,98],[250,98]], hi:[0,1,2,3,4] },
+  doubleteam: { pos:[[200,130],[230,110],[170,110],[92,54],[308,54]], hi:[0,1,2] }
 };
 
+/* Restyling su richiesta dell'utente: viewBox molto piu' corto (400x180 invece di 400x300) cosi'
+   il disegno resta compatto anche a piena larghezza su telefono (sotto i 520px .tactic-grid passa
+   a colonna singola, quindi prima ogni card superava i 400px di solo disegno). Pallini pieni e piu'
+   contrastati invece del grigio scuro su sfondo scuro di prima (poco leggibile e "spento"), stella
+   della tattica con alone invece della differenza di stile anello/pieno; vector-effect mantiene i
+   contorni nitidi qualunque sia la larghezza reale della card. */
 function renderTacticDiagram(tacticId){
   const cfg = TACTIC_DIAGRAMS[tacticId] || TACTIC_DIAGRAMS.balanced;
+  // Corretto dopo il primo giro: avevo dimezzato l'altezza del campo (300->180) ma lasciato lo
+  // stesso raggio dei pallini, cosi' i pallini erano diventati quasi il doppio in proporzione
+  // all'altezza del campo (che nel frattempo sembrava "rimpicciolito" per lo stesso motivo). Qui
+  // il rettangolo dell'area e il cerchio del tiro libero sono piu' grandi (piu' presenza visiva)
+  // mentre i pallini sono piu' piccoli, per tornare alla stessa proporzione campo/pallini di prima.
   const dots = cfg.pos.map((p,i)=>{
     const hi = cfg.hi.includes(i);
-    return `<circle cx="${p[0]}" cy="${p[1]}" r="${hi?11:9}" fill="${hi?'var(--lnp-orange)':'#4a5568'}" stroke="#0f1720" stroke-width="1.5"/>`;
+    const glow = hi ? `<circle cx="${p[0]}" cy="${p[1]}" r="10" fill="#b5abfc" fill-opacity="0.25"/>` : '';
+    return glow + `<circle cx="${p[0]}" cy="${p[1]}" r="${hi?7.5:6}" fill="${hi?'#b5abfc':'#8a90ab'}" stroke="#0f1720" stroke-width="1.5" vector-effect="non-scaling-stroke"/>`;
   }).join('');
   return `
-    <svg class="tactic-mini-court" viewBox="0 0 400 300" width="100%">
-      <rect x="0" y="0" width="400" height="300" fill="#161f28"/>
-      <rect x="150" y="150" width="100" height="150" fill="none" stroke="#333d47" stroke-width="1.5"/>
-      <circle cx="200" cy="150" r="30" fill="none" stroke="#333d47" stroke-width="1.5"/>
-      <path d="M 55 300 A 148 148 0 0 1 345 300" fill="none" stroke="#333d47" stroke-width="1.5"/>
-      <circle cx="200" cy="278" r="7" fill="none" stroke="#e07b2f" stroke-width="1.5"/>
+    <svg class="tactic-mini-court" viewBox="0 0 400 180" width="100%">
+      <rect x="0" y="0" width="400" height="180" fill="#161f28"/>
+      <rect x="140" y="80" width="120" height="90" fill="none" stroke="#333d47" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+      <circle cx="200" cy="80" r="26" fill="none" stroke="#333d47" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+      <path d="M 55 175 Q 200 35 345 175" fill="none" stroke="#333d47" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+      <circle cx="200" cy="170" r="4" fill="none" stroke="#e07b2f" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
       ${dots}
     </svg>
   `;
@@ -4828,7 +4957,11 @@ function getFullLeagueRatePool(){
 }
 
 function simulateClubPlayerStats(clubName){
-  const roster = getClubPlayerPool(clubName);
+  // Le partite tra due squadre CPU (tutte tranne quella dell'utente ogni settimana) passano da qui,
+  // non da generatePossessionEvents — generavano le statistiche con un rumore gaussiano centrato
+  // dritto sul ppg/rpg/apg/spg statico del dataset, ignorando del tutto la forma della run. Per
+  // "tutta la lega" vuol dire che il 90%+ delle partite di campionato restava non affetto.
+  const roster = applyFormMods(getClubPlayerPool(clubName));
   if(!roster.length) return;
   const box = {};
   roster.forEach(p=>{
@@ -5151,7 +5284,7 @@ function runSeriesRound(pairs, stageLabel, callback){
    in questo turno non c'e' nulla da preparare (il resto del tabellone si risolve comunque da solo
    senza il suo intervento), quindi si prosegue subito senza fermarsi. */
 function pauseAfterRound(roundLabel, resumeFn){
-  if(state.postSeason.userEliminatedStage){ resumeFn(); return; }
+  if(state.postSeason.userEliminatedStage || nocSkipSeasonActive){ resumeFn(); return; }
   state.postSeason.awaitingRoundContinue = { label: roundLabel, resume: resumeFn };
   if(typeof nocRefreshShell === 'function') nocRefreshShell();
 }
@@ -5165,15 +5298,62 @@ function continueAfterRoundPause(){
 
 function computeSeasonMVP(){
   const progress = state.leagueStatsProgress || {};
+  // "MVP Squadra" deve essere il migliore della TUA rosa, non di tutta la lega — recordRealMatchStats()
+  // registra le tue partite con clubLabel=state.teamName, quindi filtrare su quello isola esattamente
+  // i tuoi giocatori (bug preesistente: prima mancava questo filtro e usciva il migliore di tutta la lega).
   const candidates = Object.keys(progress).map(key=>{
     const rec = progress[key];
     const [nome,cognome,club] = key.split('|');
     const ppg = rec.pts/rec.games, apg = rec.ast/rec.games, rpg = rec.reb/rec.games, spg = rec.stl/rec.games;
     const score = ppg + apg*1.5 + rpg*1.2 + spg*3.0;
     return { nome, cognome, club, games:rec.games, ppg, apg, rpg, spg, score };
-  }).filter(p=>p.games >= 5);
+  }).filter(p=>p.games >= 5 && p.club === state.teamName);
   if(!candidates.length) return null;
   return candidates.sort((a,b)=>b.score-a.score)[0];
+}
+
+function computeRunRecap(){
+  const feed = state.matchFeed || [];
+  let biggestWin = null, worstLoss = null, curStreak = 0, bestStreak = 0;
+  feed.forEach(function(e){
+    if(e.won){
+      const margin = e.scoreYou - e.scoreOpp;
+      if(!biggestWin || margin > biggestWin.margin) biggestWin = { opponent:e.opponent, margin:margin, scoreYou:e.scoreYou, scoreOpp:e.scoreOpp };
+      curStreak++;
+      if(curStreak > bestStreak) bestStreak = curStreak;
+    } else {
+      const margin = e.scoreOpp - e.scoreYou;
+      if(!worstLoss || margin > worstLoss.margin) worstLoss = { opponent:e.opponent, margin:margin, scoreYou:e.scoreYou, scoreOpp:e.scoreOpp };
+      curStreak = 0;
+    }
+  });
+  return { gamesPlayed: feed.length, biggestWin: biggestWin, worstLoss: worstLoss, bestStreak: bestStreak };
+}
+
+/* "Run Recap" di fine stagione (su richiesta dell'utente, ispirato al recap di fine run di un
+   roguelike): MVP della tua squadra in evidenza in alto, poi una manciata di numeri che
+   raccontano la run appena conclusa — partite giocate, vittoria piu' larga, sconfitta piu'
+   pesante, striscia di vittorie piu' lunga. Tutto calcolato da state.matchFeed (solo campionato:
+   playoff/Coppa Italia/Supercoppa non ci finiscono dentro, stessa fonte dati gia' usata dal radar
+   e dalla tabella delle medie, quindi coerente col resto della schermata). */
+function nocRunRecapHtml(mvp, recap){
+  const mvpBlock = mvp ? (
+    '<div class="noc-recap-mvp">' +
+      '<div class="noc-recap-mvp-kicker">MVP DELLA STAGIONE</div>' +
+      '<div class="noc-recap-mvp-avatar">' + nocInitials(mvp.nome, mvp.cognome) + '</div>' +
+      '<div class="noc-recap-mvp-name">' + mvp.nome + ' ' + mvp.cognome + '</div>' +
+      '<div class="noc-recap-mvp-stats">' + mvp.ppg.toFixed(1) + ' PPG &middot; ' + mvp.rpg.toFixed(1) + ' RPG &middot; ' + mvp.apg.toFixed(1) + ' APG &middot; ' + mvp.spg.toFixed(1) + ' SPG</div>' +
+    '</div>'
+  ) : '';
+  const gamesTile = '<div class="noc-recap-tile"><div class="noc-recap-tile-label">Partite Giocate</div><div class="noc-recap-tile-value">' + recap.gamesPlayed + '</div></div>';
+  const streakTile = '<div class="noc-recap-tile"><div class="noc-recap-tile-label">Miglior Striscia</div><div class="noc-recap-tile-value">' + recap.bestStreak + '</div><div class="noc-recap-tile-sub">vittorie consecutive</div></div>';
+  const winTile = recap.biggestWin
+    ? '<div class="noc-recap-tile"><div class="noc-recap-tile-label">Vittoria Piu Larga</div><div class="noc-recap-tile-value positive">+' + recap.biggestWin.margin + '</div><div class="noc-recap-tile-sub">vs ' + recap.biggestWin.opponent + ' (' + recap.biggestWin.scoreYou + '-' + recap.biggestWin.scoreOpp + ')</div></div>'
+    : '<div class="noc-recap-tile"><div class="noc-recap-tile-label">Vittoria Piu Larga</div><div class="noc-recap-tile-value">&mdash;</div></div>';
+  const lossTile = recap.worstLoss
+    ? '<div class="noc-recap-tile"><div class="noc-recap-tile-label">Sconfitta Piu Pesante</div><div class="noc-recap-tile-value negative">-' + recap.worstLoss.margin + '</div><div class="noc-recap-tile-sub">vs ' + recap.worstLoss.opponent + ' (' + recap.worstLoss.scoreYou + '-' + recap.worstLoss.scoreOpp + ')</div></div>'
+    : '<div class="noc-recap-tile"><div class="noc-recap-tile-label">Sconfitta Piu Pesante</div><div class="noc-recap-tile-value">&mdash;</div></div>';
+  return mvpBlock + '<div class="noc-recap-grid">' + gamesTile + streakTile + winTile + lossTile + '</div>';
 }
 
 function finishPostSeason(message, outcome){
@@ -6109,6 +6289,17 @@ function nocRenderMatchTab(){
     controlsBox.innerHTML = '';
   }
 
+  // "Salta a Fine Stagione" — pensato per i test (verificare la varianza della forma della run senza
+  // giocare 38 giornate + playoff a mano ogni volta), ma resta un bottone normale sempre disponibile
+  // finche' la stagione e' in corso, playoff/Coppa Italia/Supercoppa inclusi.
+  const canSkipSeason = !state.seasonOver && (state.opponent || (state.postSeason && state.postSeason.active));
+  if(canSkipSeason){
+    controlsBox.innerHTML += '<button type="button" class="noc-btn noc-btn-secondary noc-btn-full" id="noc-btn-skip-season" style="margin-top:8px;" ' +
+      (nocSkipSeasonActive ? 'disabled' : '') + '>' + (nocSkipSeasonActive ? 'Sto saltando alla fine…' : 'Salta a Fine Stagione (test)') + '</button>';
+    const skipBtn = controlsBox.querySelector('#noc-btn-skip-season');
+    if(skipBtn) skipBtn.addEventListener('click', function(){ nocSkipToEndOfSeason(); });
+  }
+
   if(!resultsList) return;
   if(!feed.length){
     resultsList.innerHTML = '<div class="noc-eos-summary">Nessuna partita giocata finora.</div>';
@@ -6151,7 +6342,57 @@ function nocPlayMatchInstant(){
   if(!state.opponent || state.seasonOver) return;
   if(state.postSeason && state.postSeason.active) return;
   startLiveMatch();
-  skipLiveMatch();
+  // Quando "Salta a Fine Stagione" e' attivo, startLiveMatch() ha gia' chiamato skipLiveMatch() al
+  // suo interno (vedi il suo hook finale) — richiamarlo qui la farebbe scattare due volte sulla
+  // stessa partita gia' conclusa, con finishLiveMatch()/nextWeek() eseguiti due volte a testimonianza
+  // (stat doppiate, settimana avanzata di 2 invece di 1). Fuori dallo skip resta come sempre.
+  if(!nocSkipSeasonActive) skipLiveMatch();
+}
+
+/* "Salta a Fine Stagione" — per test/QA (verificare la varianza della forma della run senza
+   giocare 38 giornate a mano ogni volta). Guida l'intera stagione, compreso il tabellone playoff/
+   Coppa Italia/Supercoppa, fino alla schermata di fine stagione, riusando la stessa infrastruttura
+   di sempre (nocPlayMatchInstant/startLiveMatch/skipLiveMatch) — non e' un motore parallelo. I
+   pochi punti che normalmente aspettano un click dell'utente (risultato playoff, pausa fra un turno
+   e l'altro, offerta di scambio di meta' stagione, esito Coppa Italia/Supercoppa) controllano il
+   flag nocSkipSeasonActive e si auto-proseguono da soli quando e' attivo — vedi pauseAfterRound(),
+   finishLiveMatch(), showCoppaItaliaResult(), showSupercoppaResult(), nocShowMidSeasonTradeOffer(). */
+let nocSkipSeasonActive = false;
+
+function nocSkipToEndOfSeason(){
+  if(state.seasonOver || (!state.opponent && !(state.postSeason && state.postSeason.active))) return;
+  nocSkipSeasonActive = true;
+  if(typeof nocRefreshShell === 'function') nocRefreshShell();
+  nocSkipStep();
+}
+
+function nocSkipStep(){
+  if(!nocSkipSeasonActive) return;
+  if(state.seasonOver){
+    nocSkipSeasonActive = false;
+    if(typeof nocRefreshShell === 'function') nocRefreshShell();
+    return;
+  }
+  if(state.postSeason && state.postSeason.active){
+    // Tabellone in corso: si auto-risolve tramite i punti di pausa gia' patchati sopra (risultato
+    // partita, pausa fra i turni, ecc.) — qui basta continuare a controllare finche' non finisce.
+    setTimeout(nocSkipStep, 30);
+    return;
+  }
+  if(state.opponent){
+    const weekBefore = state.week;
+    nocPlayMatchInstant();
+    (function waitForAdvance(){
+      if(!nocSkipSeasonActive) return;
+      if(state.week!==weekBefore || state.seasonOver || (state.postSeason && state.postSeason.active)){
+        setTimeout(nocSkipStep, 10);
+      } else {
+        setTimeout(waitForAdvance, 10);
+      }
+    })();
+    return;
+  }
+  setTimeout(nocSkipStep, 30);
 }
 
 /* Fresh Nocturne box-score table, built from the SAME per-match data
@@ -6806,7 +7047,12 @@ function generatePossessionEvents(myRoster, oppRoster, startI, endI, myMods, opp
     const offMods = offenseMods;
     const offStar = meOnOffense ? myStar : oppStar;
 
-    let stealChance = 0.12 + (offenseMods.turnoverBonus||0) + (defenseMods.stealBonus||0);
+    // turnoverBonus resta "quanto la mia squadra e' sbadata quando attacco io" (letto solo da
+    // offenseMods, corretto su tattiche come Run & Gun/Motion). pressureBonus e' il meccanismo vero
+    // per "quanto la mia difesa costringe l'avversario a perdere palla": letto solo da defenseMods,
+    // cosi' una tattica difensiva puo' davvero forzare palle perse invece di rendere sbadata la
+    // propria squadra quando attacca (il difetto di Pressing a Tutto Campo prima di questa modifica).
+    let stealChance = 0.12 + (offenseMods.turnoverBonus||0) + (defenseMods.stealBonus||0) + (defenseMods.pressureBonus||0);
     stealChance = Math.max(0.03, Math.min(0.35, stealChance));
     if(Math.random() < stealChance){
       const defender = weightedPick(defRoster, p=>(p.spg+0.3)*usageMult(p));
@@ -6844,7 +7090,11 @@ function generatePossessionEvents(myRoster, oppRoster, startI, endI, myMods, opp
     is3chance = Math.max(0.02, Math.min(0.65, is3chance));
     const is3 = Math.random() < is3chance;
     const shotValue = is3 ? 3 : 2;
-    events.push({team: meOnOffense?'you':'opp', type:'attempt', cognome:shooter.cognome, value:shotValue});
+    // Un tiro conta come "isolamento" quando arriva dallo stesso meccanismo che lo genera qui sopra:
+    // il bonus di peso isoBonus applicato al miglior marcatore della squadra (offStar). Non e' un
+    // secondo modello, e' solo la stessa decisione gia' presa poco sopra, taggata per il tabellino.
+    const isIso = !!(offenseMods.isoBonus && shooter===offStar);
+    events.push({team: meOnOffense?'you':'opp', type:'attempt', cognome:shooter.cognome, value:shotValue, isIso:isIso});
 
     // Modello a statistiche reali: il tiratore conta per il suo talento realizzativo,
     // la squadra che passa bene aiuta tutti, la difesa che rimbalza/ruba palloni disturba i tiri.
@@ -6870,8 +7120,19 @@ function generatePossessionEvents(myRoster, oppRoster, startI, endI, myMods, opp
     if(Math.random() < makeProb){
       events.push({team: meOnOffense?'you':'opp', type:'score', cognome:shooter.cognome, value:shotValue});
       const teamAstRate = teamAvgStat(offRoster,'apg') / (LEAGUE_AVG.apg||1);
-      let astChance = 0.35 + Math.min(0.35, teamAstRate*0.20) + dampenStack(offenseMods.astBonus||0);
-      astChance = Math.max(0.15, Math.min(0.85, astChance));
+      // Su richiesta dell'utente: prima la probabilita' di assist era piatta, uguale per ogni tipo di
+      // tiro. Un tiro in isolamento e' per definizione senza passaggio subito prima — non puo' mai
+      // essere assistito. I tiri da 3 nella pallacanestro vera sono quasi sempre su ricezione
+      // (catch-and-shoot), i tiri da 2 spesso autoprodotti — quindi ora l'assist parte da una base
+      // diversa per tipo di tiro invece che identica per tutti.
+      let astChance;
+      if(isIso){
+        astChance = 0;
+      } else {
+        const astBase = is3 ? 0.55 : 0.30;
+        astChance = astBase + Math.min(0.35, teamAstRate*0.20) + dampenStack(offenseMods.astBonus||0);
+        astChance = Math.max(is3?0.30:0.10, Math.min(is3?0.90:0.75, astChance));
+      }
       if(Math.random() < astChance){
         const passers = offRoster.filter(p=>p.cognome!==shooter.cognome);
         const passer = weightedPick(passers, p=>{
@@ -6966,6 +7227,7 @@ const MOD_LABELS = {
   rebBonus:        { label:'Rimbalzi',                 mult:100, suffix:'%' },
   offRebPenalty:   { label:'Rimbalzi offensivi',       mult:100, suffix:'%' },
   turnoverBonus:   { label:'Palle perse',              mult:100, suffix:'%' },
+  pressureBonus:   { label:'Palle perse avversarie forzate', mult:100, suffix:'%' },
   paceBonus:       { label:'Possessi a partita',       mult:1,   suffix:'' },
   isoBonus:        { label:'Uso del miglior marcatore', mult:1,   suffix:'x' },
   oppIs3Bonus:     { label:'Tiri da 3 avversari',      mult:100, suffix:'%' },
@@ -7106,8 +7368,8 @@ function startLiveMatch(){
   const rosterForMatch = applyFormMods(entraTuttoRoster);
 
   const box = { my:{}, opp:{} };
-  state.roster.forEach(p=> box.my[p.cognome] = { pts:0, reb:0, ast:0, stl:0, att2:0, mk2:0, att3:0, mk3:0, role:p.role });
-  oppRoster.forEach(p=> box.opp[p.cognome] = { pts:0, reb:0, ast:0, stl:0, att2:0, mk2:0, att3:0, mk3:0, role:p.role });
+  state.roster.forEach(p=> box.my[p.cognome] = { pts:0, reb:0, ast:0, stl:0, att2:0, mk2:0, att3:0, mk3:0, iso:0, role:p.role });
+  oppRoster.forEach(p=> box.opp[p.cognome] = { pts:0, reb:0, ast:0, stl:0, att2:0, mk2:0, att3:0, mk3:0, iso:0, role:p.role });
 
   LM = {
     oppRoster, myRoster: rosterForMatch, baseMods, oppMods, possessionsEach, entraTuttoPlayer: triggeredName, oppHotNight,
@@ -7124,6 +7386,9 @@ function startLiveMatch(){
   if(oppHotNight){
     setTimeout(()=> liveAddChronicle(`${state.opponent.name} sembra in serata di grazia stasera...`), 60);
   }
+  // "Salta a Fine Stagione" (solo test/QA): ogni live match che parte mentre lo skip e' attivo si
+  // risolve all'istante, esattamente come se l'utente avesse premuto "Salta" a mano.
+  if(nocSkipSeasonActive) skipLiveMatch();
 }
 
 function paintLivePixelBall(container){
@@ -7523,6 +7788,7 @@ function applyLiveEvent(ev){
 
   if(ev.type==='attempt'){
     if(ev.value===2) boxSide[ev.cognome].att2++; else boxSide[ev.cognome].att3++;
+    if(ev.isIso) boxSide[ev.cognome].iso++;
     LM.pendingShotSide = side;
     LM.pendingShotIs3 = (ev.value===3);
     LM.pendingShotCognome = ev.cognome;
@@ -7657,6 +7923,14 @@ function finishLiveMatch(){
     closeModal();
     render();
     setTimeout(()=> nextWeek(), state.autoPlay ? 250 : 0);
+    return;
+  }
+
+  // "Salta a Fine Stagione": una partita del tabellone (playoff/Coppa Italia/Supercoppa) normalmente
+  // si ferma qui ad aspettare che l'utente prema "Continua" sul risultato — durante lo skip si
+  // prosegue subito, senza nemmeno costruire la schermata di risultato.
+  if(inPostSeason && nocSkipSeasonActive){
+    continuePostSeasonAfterMatch(won);
     return;
   }
 
@@ -8345,6 +8619,7 @@ function runSupercoppa(top4, onDone){
   });
 }
 function showSupercoppaResult(won, champion, onDone){
+  if(nocSkipSeasonActive){ onDone(); return; }
   const modal = document.getElementById('modal-content');
   modal.classList.remove('live-match'); modal.classList.remove('wide'); modal.classList.add('noc-confirm');
   let title, message;
@@ -8382,6 +8657,7 @@ function runCoppaItalia(onDone){
 }
 
 function showCoppaItaliaResult(won, champion, userQualified, onDone){
+  if(nocSkipSeasonActive){ onDone(); return; }
   const modal = document.getElementById('modal-content');
   modal.classList.remove('live-match'); modal.classList.remove('wide'); modal.classList.add('noc-confirm');
   let title, message;
@@ -8411,7 +8687,10 @@ function showCoppaItaliaResult(won, champion, userQualified, onDone){
    accetti lo scambio e' immediato e definitivo — nessun modo di tornare indietro, di proposito. */
 function nocShowMidSeasonTradeOffer(onDone){
   const isCareerMode = !state.myPlayerCognome && !(state.rtg && state.rtg.active);
-  if(!isCareerMode || !state.roster.length){ onDone(); return; }
+  // Durante "Salta a Fine Stagione" l'offerta va sempre rifiutata in automatico invece di aprire una
+  // modale che aspetterebbe un click: rifiutare non tocca la rosa, quindi e' l'unica scelta sicura
+  // da fare senza input dell'utente.
+  if(!isCareerMode || !state.roster.length || nocSkipSeasonActive){ onDone(); return; }
 
   // Try every roster player (in random order), not just one fixed random pick: a roster's best
   // players often have NO real peer left in the league within ±5 OVR once already-owned players
